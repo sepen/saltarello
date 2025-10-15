@@ -1,4 +1,3 @@
-```markdown
 # Saltarello
 
 ## Table of Contents
@@ -24,39 +23,37 @@ Saltarello is a 2D platformer game built using the SDL2 library. The game combin
 Saltarello uses the SDL2 library for graphics, audio, and input handling. The game initializes a window and renderer, loads necessary assets (fonts, sounds, and music), and enters a main game loop that handles events, updates game state, and renders graphics. The player character can move left and right, jump, and shoot bullets to interact with obstacles. The game dynamically generates obstacles based on the player's score, increasing the challenge as the game progresses.
 
 ## Installation
-To run Saltarello, ensure you have the following dependencies installed:
-- SDL2
-- SDL2_ttf
-- SDL2_mixer
+To run Saltarello, follow these steps:
 
-### Steps:
-1. Clone the repository:
+1. **Install dependencies**:
+   Ensure you have SDL2, SDL2_mixer, and SDL2_ttf installed. You can install them via your package manager.
+
+   For example, on Ubuntu:
    ```bash
-   git clone https://github.com/yourusername/saltarello.git
-   cd saltarello
+   sudo apt-get install libsdl2-dev libsdl2-mixer-dev libsdl2-ttf-dev
+   ```
+   On macOS:
+   ```bash
+   brew install sdl2 sdl2_mixer sdl2_ttf
    ```
 
-2. Install the required libraries. For example, on Ubuntu:
+2. **Build the project**:
    ```bash
-   sudo apt-get install libsdl2-dev libsdl2-ttf-dev libsdl2-mixer-dev
+   ./configure
+   make
    ```
 
-3. Compile the project:
+3. **Run the application**:
    ```bash
-   g++ -o saltarello main.cpp -lSDL2 -lSDL2_ttf -lSDL2_mixer
-   ```
-
-4. Run the game:
-   ```bash
-   ./saltarello
+   ./melontron
    ```
 
 ## Usage
-- Use the **UP** arrow key to jump.
-- Use the **LEFT** and **RIGHT** arrow keys to move the player.
-- Press the **X** key to shoot bullets.
+- Use the `UP` arrow key to jump.
+- Use the `LEFT` and `RIGHT` arrow keys to move the player.
+- Press the `X` key to shoot bullets.
 - Avoid obstacles to keep playing and increase your score.
-- Press **ENTER** to restart the game after a game over.
+- Press `ENTER` to restart the game after a game over.
 
 ## Contributing
 Contributions are welcome! If you would like to contribute to Saltarello, please follow these steps:
@@ -68,4 +65,4 @@ Contributions are welcome! If you would like to contribute to Saltarello, please
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-```
+
