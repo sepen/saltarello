@@ -30,30 +30,38 @@ To run Saltarello, follow these steps:
 
    For example, on Ubuntu:
    ```bash
-   sudo apt-get install libsdl2-dev libsdl2-mixer-dev libsdl2-ttf-dev
+   sudo apt-get install build-essential autoconf automake pkg-config libsdl2-dev libsdl2-mixer-dev libsdl2-ttf-dev
    ```
    On macOS:
    ```bash
-   brew install sdl2 sdl2_mixer sdl2_ttf
+   brew install autoconf automake pkg-config sdl2 sdl2_mixer sdl2_ttf
    ```
 
-2. **Build the project**:
+2. **Build the project** (requires autoconf, automake and pkg-config):
    ```bash
+   autoreconf -fi
    ./configure
    make
    ```
+   Optional: `./configure --enable-asan` builds with AddressSanitizer. It works on
+   Linux; on macOS it aborts at startup because Homebrew's `sdl2` (`sdl2-compat`)
+   cannot be loaded under ASan.
 
 3. **Run the application**:
    ```bash
-   ./melontron
+   ./saltarello
    ```
+   Assets are looked up next to the executable, in `./assets`, and in the install
+   directory (`$prefix/share/saltarello/assets`), so `make install` also works.
 
 ## Usage
 - Use the `UP` arrow key to jump.
+- Hold the `DOWN` arrow key to duck under birds.
 - Use the `LEFT` and `RIGHT` arrow keys to move the player.
 - Press the `X` key to shoot bullets.
 - Avoid obstacles to keep playing and increase your score.
 - Press `ENTER` to restart the game after a game over.
+- Press `ESC` to quit.
 
 ## Contributing
 Contributions are welcome! If you would like to contribute to Saltarello, please follow these steps:
