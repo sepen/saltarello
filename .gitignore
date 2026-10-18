@@ -1,0 +1,30 @@
+# Autotools generated files (run `autoreconf -fi` to regenerate)
+/aclocal.m4
+/autom4te.cache/
+/build-aux/
+/config.h
+/config.h.in
+/config.h.in~
+/config.log
+/config.status
+/configure
+/configure~
+/Makefile
+/Makefile.in
+/stamp-h1
+/compile
+/depcomp
+/install-sh
+/missing
+.deps/
+*.o
+
+# Build output
+/saltarello
+/saltarello.exe
+
+# macOS
+.DS_Store
+
+# Local notes
+/COMMIT
