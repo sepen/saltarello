@@ -73,7 +73,7 @@ To run Saltarello, follow these steps:
    `SDL_AUDIODRIVER=dummy` it runs headless.
 
 ## Usage
-- Use the `UP` arrow key to jump.
+- Use the `UP` arrow key to jump. Tap it for a short hop, hold it to jump higher.
 - Hold the `DOWN` arrow key to duck under birds (only on the ground).
 - Use the `LEFT` and `RIGHT` arrow keys to move the player.
 - Press the `X` key to shoot bullets.

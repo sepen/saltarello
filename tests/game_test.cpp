@@ -116,6 +116,33 @@ static void TestObstaclesKeepMinimumGap() {
     }
 }
 
+// Highest point (pixels above the ground) of a jump holding UP for `holdTicks`
+static int JumpPeak(int holdTicks) {
+    GameState game = NewGame();
+    game.obstacles.clear();
+    const int ground = game.player.y;
+    int peak = 0;
+    for (int tick = 0; tick < 200; tick++) {
+        UpdateGame(game, tick < holdTicks ? UP : NO_KEYS);
+        peak = std::max(peak, ground - game.player.y);
+        if (tick > 0 && !game.player.isJumping) break;
+    }
+    return peak;
+}
+
+static void TestVariableJumpHeight() {
+    int tap = JumpPeak(1);
+    int held = JumpPeak(40);
+    CHECK(tap < held);
+    CHECK(JumpPeak(6) > tap);
+    CHECK(JumpPeak(6) < held);
+    // A tap clears a stone but not a tall obstacle
+    CHECK(tap > STONE_HEIGHT);
+    CHECK(tap < OBSTACLE_HEIGHT);
+    // Holding UP keeps the original full jump
+    CHECK(held == 171);
+}
+
 int main() {
     TestStandingPlayerHitsBird();
     TestDuckingPlayerClearsBird();
@@ -125,6 +152,7 @@ int main() {
     TestDuckingDoesNotAvoidGroundObstacles();
     TestMinObstacleGapGrowsWithSpeed();
     TestObstaclesKeepMinimumGap();
+    TestVariableJumpHeight();
 
     if (failures) {
         std::fprintf(stderr, "%d check(s) failed\n", failures);

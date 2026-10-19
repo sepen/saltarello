@@ -20,7 +20,7 @@ its own commit on `main`. Tick the box in that same commit.
 - [x] **Minimum gap between obstacles** — respawn uses `rand() % 300` and obstacles can
   end up stacked, sometimes impossible to clear. Guarantee a minimum gap that grows
   with speed.
-- [ ] **Variable jump height** — releasing UP early cuts the jump short.
+- [x] **Variable jump height** — releasing UP early cuts the jump short.
 - [ ] **Coyote time and jump buffering** — a jump pressed a few milliseconds before
   landing (or just after leaving the ground) still counts.
 

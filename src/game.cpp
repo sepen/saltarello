@@ -78,6 +78,11 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
         events.jumped = true;
     }
 
+    // Releasing UP while rising cuts the jump short (variable jump height)
+    if (player.isJumping && !input.up && player.velocityY < -JUMP_CUT_SPEED) {
+        player.velocityY = -JUMP_CUT_SPEED;
+    }
+
     // Duck with DOWN key, only while on the ground
     player.isDucking = input.down && !player.isJumping;
 

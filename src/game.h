@@ -22,6 +22,7 @@ const int BIRD_HEIGHT = 20;
 const int BIRD_Y = GROUND_Y - 50;  // head height: hits a standing player, clears a ducking one
 const int GRAVITY = 1;
 const int JUMP_STRENGTH = 18;
+const int JUMP_CUT_SPEED = 8;  // releasing UP caps the rising speed: short hop
 const int MOVE_SPEED = 5;
 const int BULLET_WIDTH = 10;
 const int BULLET_HEIGHT = 5;
