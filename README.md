@@ -2,6 +2,8 @@
 
 [![Build](https://github.com/sepen/saltarello/actions/workflows/build.yml/badge.svg)](https://github.com/sepen/saltarello/actions/workflows/build.yml)
 
+![Saltarello: the chicken jumps over a smiling poop and throws an egg at a flying pig](docs/screenshot.png)
+
 ## Table of Contents
 - [Project Overview](#project-overview)
 - [Features](#features)
