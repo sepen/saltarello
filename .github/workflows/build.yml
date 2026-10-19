@@ -1,0 +1,65 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf automake pkg-config \
+            libsdl2-dev libsdl2-ttf-dev libsdl2-mixer-dev
+      - name: Configure
+        run: autoreconf -fi && ./configure
+      - name: Build
+        run: make
+      # distcheck also builds out of tree and runs `make check`
+      - name: Distcheck
+        run: make distcheck
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: brew install autoconf automake pkgconf sdl2 sdl2_ttf sdl2_mixer
+      - name: Configure
+        run: autoreconf -fi && ./configure
+      - name: Build
+        run: make
+      - name: Smoke test
+        run: make check
+
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            autoconf
+            automake
+            make
+          pacboy: >-
+            gcc:p
+            pkgconf:p
+            SDL2:p
+            SDL2_ttf:p
+            SDL2_mixer:p
+      - name: Configure
+        run: autoreconf -fi && ./configure
+      - name: Build
+        run: make
+      - name: Smoke test
+        run: make check

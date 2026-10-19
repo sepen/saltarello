@@ -8,13 +8,24 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <string>
 
 const Uint32 FRAME_MS = 16; // ~60 FPS
 
 // argc/argv are required so SDL_main works on Windows
 int main(int argc, char* argv[]) {
-    (void)argc;
-    (void)argv;
+    // --frames N: quit after N frames (smoke tests; combine with
+    // SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy to run without a display)
+    long maxFrames = -1;
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "--frames" && i + 1 < argc) {
+            maxFrames = std::strtol(argv[++i], nullptr, 10);
+        } else {
+            std::cerr << "Usage: " << argv[0] << " [--frames N]" << std::endl;
+            return 2;
+        }
+    }
 
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
@@ -58,10 +69,11 @@ int main(int argc, char* argv[]) {
 
     GameState game = NewGame();
     bool quit = false;
+    long frames = 0;
     SDL_Event e;
 
     // Main game loop
-    while (!quit) {
+    while (!quit && (maxFrames < 0 || frames++ < maxFrames)) {
         Uint32 currentTime = SDL_GetTicks();
 
         // Event handling

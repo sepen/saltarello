@@ -21,3 +21,9 @@ nobase_dist_pkgdata_DATA = \
 	assets/font.ttf \
 	assets/jump.wav \
 	assets/shoot.wav
+
+# Smoke test: start the game without a display and run a few frames.
+# Runs from $(srcdir) so assets are found in out-of-tree builds (distcheck).
+check-local: saltarello$(EXEEXT)
+	cd $(srcdir) && SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+		$(abs_builddir)/saltarello$(EXEEXT) --frames 60

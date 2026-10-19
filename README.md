@@ -1,5 +1,7 @@
 # Saltarello
 
+[![Build](https://github.com/sepen/saltarello/actions/workflows/build.yml/badge.svg)](https://github.com/sepen/saltarello/actions/workflows/build.yml)
+
 ## Table of Contents
 - [Project Overview](#project-overview)
 - [Features](#features)
@@ -53,6 +55,9 @@ To run Saltarello, follow these steps:
    ./configure
    make
    ```
+   `make check` runs a smoke test: it starts the game without a display and runs
+   60 frames. CI builds and runs it on Linux, macOS and Windows (MSYS2).
+
    Optional: `./configure --enable-asan` builds with AddressSanitizer. It works on
    Linux; on macOS it aborts at startup because Homebrew's `sdl2` (`sdl2-compat`)
    cannot be loaded under ASan.
@@ -63,6 +68,9 @@ To run Saltarello, follow these steps:
    ```
    Assets are looked up next to the executable, in `./assets`, and in the install
    directory (`$prefix/share/saltarello/assets`), so `make install` also works.
+
+   `./saltarello --frames N` quits after N frames; with `SDL_VIDEODRIVER=dummy` and
+   `SDL_AUDIODRIVER=dummy` it runs headless.
 
 ## Usage
 - Use the `UP` arrow key to jump.
