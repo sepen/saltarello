@@ -287,6 +287,46 @@ static void TestBreakingObstacleScores() {
     CHECK(game.obstacles[0].x > SCREEN_WIDTH);  // replaced by a new one
 }
 
+// A game where the pig is active and an egg is about to hit it
+static GameState EggAboutToHitPig() {
+    GameState game = EmptyGame();
+    game.score = PIG_MIN_SCORE;
+    game.pig.active = true;
+    game.pig.x = 400;
+    Rect body = PigHitbox(game.pig);
+    game.bullets = {{body.x - BULLET_SPEED, body.y + body.h / 2}};
+    return game;
+}
+
+static void TestEggHitsPig() {
+    GameState game = EggAboutToHitPig();
+    UpdateGame(game, NO_KEYS);
+    CHECK(game.bullets.empty());
+    CHECK(game.score == PIG_MIN_SCORE + 1);
+    CHECK(game.pig.x >= SCREEN_WIDTH);  // a new pig comes later
+}
+
+static void TestEggIgnoresInactivePig() {
+    GameState game = EggAboutToHitPig();
+    game.score = 0;
+    game.pig.active = false;
+    UpdateGame(game, NO_KEYS);
+    CHECK(game.bullets.size() == 1);
+    CHECK(game.score == 0);
+}
+
+static void TestEggThrownStandingPassesUnderPig() {
+    GameState game = EmptyGame();
+    game.score = PIG_MIN_SCORE;
+    game.pig.active = true;
+    game.pig.x = game.player.x + PLAYER_WIDTH + 40;
+    UpdateGame(game, FIRE_KEY);
+    CHECK(game.bullets.size() == 1);
+    Rect egg = {game.bullets[0].x, game.bullets[0].y, BULLET_WIDTH, BULLET_HEIGHT};
+    Rect body = PigHitbox(game.pig);
+    CHECK(egg.y >= body.y + body.h);  // below the pig's belly
+}
+
 int main() {
     TestStandingPlayerHitsPig();
     TestDuckingPlayerClearsPig();
@@ -308,6 +348,9 @@ int main() {
     TestThrowCooldown();
     TestEggsRecharge();
     TestBreakingObstacleScores();
+    TestEggHitsPig();
+    TestEggIgnoresInactivePig();
+    TestEggThrownStandingPassesUnderPig();
 
     if (failures) {
         std::fprintf(stderr, "%d check(s) failed\n", failures);

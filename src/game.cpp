@@ -200,19 +200,26 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
         }
     }
 
-    // Move bullets and check for collision with obstacles
+    // Move bullets and check for collision with obstacles and the pig
     for (auto it_bullet = bullets.begin(); it_bullet != bullets.end(); ) {
         it_bullet->x += BULLET_SPEED;
+        const Rect egg = {it_bullet->x, it_bullet->y, BULLET_WIDTH, BULLET_HEIGHT};
         bool bulletDestroyed = false;
 
         for (auto& obs : obstacles) {
-            if (obs.active &&
-                Overlaps({it_bullet->x, it_bullet->y, BULLET_WIDTH, BULLET_HEIGHT}, ObstacleHitbox(obs))) {
+            if (obs.active && Overlaps(egg, ObstacleHitbox(obs))) {
                 obs.active = false;  // Only this obstacle is destroyed
                 game.score++;        // same as dodging it
                 bulletDestroyed = true;
                 break;
             }
+        }
+
+        // The pig flies above the chicken's beak: it has to be hit mid-jump
+        if (!bulletDestroyed && pig.active && Overlaps(egg, PigHitbox(pig))) {
+            pig.x = SCREEN_WIDTH + std::rand() % SPAWN_SPREAD;  // a new pig, later
+            game.score++;
+            bulletDestroyed = true;
         }
 
         if (bulletDestroyed || it_bullet->x > SCREEN_WIDTH) {

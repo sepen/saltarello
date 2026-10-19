@@ -28,7 +28,8 @@ its own commit on `main`. Tick the box in that same commit.
 
 - [x] **Rebalance shooting** — throwing is free with 3 eggs that recharge (1 every
   2 s, shown top-right), and breaking an obstacle scores +1 like dodging it.
-- [ ] **Eggs hit pigs** — they currently pass through.
+- [x] **Eggs hit pigs** — +1 and the pig comes back later. The pig flies above the
+  beak, so it has to be hit mid-jump.
 - [ ] **More pigs at different heights** — some must be jumped, some ducked.
 - [ ] **Simple power-ups** — one-hit shield, double jump, slow motion.
 
