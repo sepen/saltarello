@@ -30,12 +30,12 @@ GameState NewGame() {
     s.score = 0;
     s.obstacleSpeed = BASE_OBSTACLE_SPEED;
     s.gameOver = false;
-    s.lastFireTime = 0;
+    s.fireCooldown = 0;
     s.fireReleased = true;
     return s;
 }
 
-GameEvents UpdateGame(GameState& game, const Input& input, uint32_t now) {
+GameEvents UpdateGame(GameState& game, const Input& input) {
     GameEvents events = {false, false, false};
     if (game.gameOver) return events;
 
@@ -62,11 +62,12 @@ GameEvents UpdateGame(GameState& game, const Input& input, uint32_t now) {
     }
 
     // Fire bullets with X key (one shot per key press)
+    if (game.fireCooldown > 0) game.fireCooldown--;
     if (input.fire) {
-        if (game.fireReleased && now - game.lastFireTime >= FIRE_RATE) {
+        if (game.fireReleased && game.fireCooldown == 0) {
             bullets.push_back({player.x + PLAYER_WIDTH, player.y + PLAYER_HEIGHT / 2});
             events.shot = true;
-            game.lastFireTime = now;
+            game.fireCooldown = FIRE_COOLDOWN_TICKS;
             game.score = std::max(0, game.score - 1);
         }
         game.fireReleased = false;

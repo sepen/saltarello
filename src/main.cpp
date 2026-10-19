@@ -5,12 +5,13 @@
 
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <cmath>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
 #include <string>
 
-const Uint32 FRAME_MS = 16; // ~60 FPS
+const int MAX_TICKS_PER_FRAME = 5;
 
 // argc/argv are required so SDL_main works on Windows
 int main(int argc, char* argv[]) {
@@ -72,9 +73,23 @@ int main(int argc, char* argv[]) {
     long frames = 0;
     SDL_Event e;
 
+    // Fixed timestep: the game advances in ticks of 1 / TICKS_PER_SECOND seconds
+    // of real time, however long each frame takes to draw.
+    const double counterFreq = static_cast<double>(SDL_GetPerformanceFrequency());
+    const double tickSeconds = 1.0 / TICKS_PER_SECOND;
+    Uint64 previousCounter = SDL_GetPerformanceCounter();
+    double accumulator = tickSeconds; // run the first tick right away
+
     // Main game loop
     while (!quit && (maxFrames < 0 || frames++ < maxFrames)) {
-        Uint32 currentTime = SDL_GetTicks();
+        Uint64 counter = SDL_GetPerformanceCounter();
+        accumulator += (counter - previousCounter) / counterFreq;
+        previousCounter = counter;
+
+        // Avoid a burst of catch-up ticks after a stall (window drag, debugger...)
+        if (accumulator > MAX_TICKS_PER_FRAME * tickSeconds) {
+            accumulator = MAX_TICKS_PER_FRAME * tickSeconds;
+        }
 
         // Event handling
         while (SDL_PollEvent(&e)) {
@@ -100,17 +115,22 @@ int main(int argc, char* argv[]) {
             keys[SDL_SCANCODE_X] != 0,
         };
 
-        GameEvents events = UpdateGame(game, input, currentTime);
-        if (events.jumped) PlaySound(audio.jump);
-        if (events.shot) PlaySound(audio.shoot);
-        if (events.crashed) PlaySound(audio.collision);
+        while (accumulator >= tickSeconds) {
+            GameEvents events = UpdateGame(game, input);
+            if (events.jumped) PlaySound(audio.jump);
+            if (events.shot) PlaySound(audio.shoot);
+            if (events.crashed) PlaySound(audio.collision);
+            accumulator -= tickSeconds;
+        }
 
         RenderGame(renderer, font, game);
         SDL_RenderPresent(renderer);
 
-        // Cap the frame rate without depending on the display refresh rate
-        Uint32 elapsed = SDL_GetTicks() - currentTime;
-        if (elapsed < FRAME_MS) SDL_Delay(FRAME_MS - elapsed);
+        // Sleep until the next tick is due; drawing more often than the game
+        // updates would only show the same frame again
+        double untilNextTick = tickSeconds - accumulator
+            - (SDL_GetPerformanceCounter() - previousCounter) / counterFreq;
+        if (untilNextTick > 0) SDL_Delay(static_cast<Uint32>(std::ceil(untilNextTick * 1000)));
     }
 
     CloseAudio(audio);

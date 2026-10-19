@@ -4,7 +4,6 @@
 // Game state and rules. This module does not depend on SDL, so it can be
 // tested and changed without touching rendering, audio or input handling.
 
-#include <cstdint>
 #include <vector>
 
 // Constants for game settings
@@ -25,7 +24,8 @@ const int MOVE_SPEED = 5;
 const int BULLET_WIDTH = 10;
 const int BULLET_HEIGHT = 5;
 const int BULLET_SPEED = 8;
-const uint32_t FIRE_RATE = 1000;
+const int TICKS_PER_SECOND = 60;     // UpdateGame() runs at this fixed rate
+const int FIRE_COOLDOWN_TICKS = 60;  // 1 s between shots
 const int BASE_OBSTACLE_SPEED = 5;
 const int BIRD_MIN_SCORE = 10;
 
@@ -57,16 +57,16 @@ struct GameState {
     int score;
     int obstacleSpeed;
     bool gameOver;
-    uint32_t lastFireTime;
+    int fireCooldown; // ticks until the next shot is allowed
     bool fireReleased;
 };
 
-// Keys held during the current frame
+// Keys held during the current tick
 struct Input {
     bool up, down, left, right, fire;
 };
 
-// What happened during a frame, so the caller can play sounds
+// What happened during a tick, so the caller can play sounds
 struct GameEvents {
     bool jumped;
     bool shot;
@@ -77,7 +77,7 @@ int ObstacleHeight(const Obstacle& obs);
 
 GameState NewGame();
 
-// Advances the game one frame. `now` is the current time in milliseconds.
-GameEvents UpdateGame(GameState& game, const Input& input, uint32_t now);
+// Advances the game one tick (1 / TICKS_PER_SECOND seconds)
+GameEvents UpdateGame(GameState& game, const Input& input);
 
 #endif

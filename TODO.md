@@ -13,7 +13,7 @@ its own commit on `main`. Tick the box in that same commit.
 
 ## 2. Game feel
 
-- [ ] **Frame-rate independent physics** — movement is currently per frame, so a slow
+- [x] **Frame-rate independent physics** — movement is currently per frame, so a slow
   frame slows the game down. Use a fixed timestep driven by real elapsed time.
 - [ ] **Real ducking** — holding DOWN only makes the bird ignore the player. Halve the
   player's height while ducking so it is visible and the collision is honest.
