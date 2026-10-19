@@ -22,6 +22,13 @@ nobase_dist_pkgdata_DATA = \
 	assets/jump.wav \
 	assets/shoot.wav
 
+# Unit tests for the game rules (no SDL needed)
+check_PROGRAMS = game_test
+game_test_SOURCES = tests/game_test.cpp src/game.cpp src/game.h
+game_test_CPPFLAGS = -I$(srcdir)/src
+game_test_CXXFLAGS = -std=c++17 -Wall -Wextra
+TESTS = game_test
+
 # Smoke test: start the game without a display and run a few frames.
 # Runs from $(srcdir) so assets are found in out-of-tree builds (distcheck).
 check-local: saltarello$(EXEEXT)

@@ -31,7 +31,8 @@ void RenderGame(SDL_Renderer* renderer, TTF_Font* font, const GameState& game) {
 
     // Draw player (Saltarello)
     SDL_SetRenderDrawColor(renderer, 128, 0, 128, 255);
-    SDL_Rect playerRect = {game.player.x, game.player.y, PLAYER_WIDTH, PLAYER_HEIGHT};
+    Rect box = PlayerBox(game.player);
+    SDL_Rect playerRect = {box.x, box.y, box.w, box.h};
     SDL_RenderFillRect(renderer, &playerRect);
 
     // Draw obstacles

@@ -13,11 +13,13 @@ const int GROUND_HEIGHT = 100;
 const int GROUND_Y = SCREEN_HEIGHT - GROUND_HEIGHT;
 const int PLAYER_WIDTH = 40;
 const int PLAYER_HEIGHT = 40;
+const int DUCK_HEIGHT = 20;  // player height while holding DOWN on the ground
 const int OBSTACLE_WIDTH = 30;
 const int OBSTACLE_HEIGHT = 60;
 const int STONE_HEIGHT = 30;
 const int BIRD_WIDTH = 20;
 const int BIRD_HEIGHT = 20;
+const int BIRD_Y = GROUND_Y - 50;  // head height: hits a standing player, clears a ducking one
 const int GRAVITY = 1;
 const int JUMP_STRENGTH = 18;
 const int MOVE_SPEED = 5;
@@ -29,11 +31,17 @@ const int FIRE_COOLDOWN_TICKS = 60;  // 1 s between shots
 const int BASE_OBSTACLE_SPEED = 5;
 const int BIRD_MIN_SCORE = 10;
 
-// Struct representing the player character
+struct Rect {
+    int x, y, w, h;
+};
+
+// Struct representing the player character. (x, y) is the top-left corner
+// of the standing player; use PlayerBox() for the current hitbox.
 struct Saltarello {
     int x, y;
     int velocityY;
     bool isJumping;
+    bool isDucking;
 };
 
 // Struct representing obstacles in the game
@@ -74,6 +82,9 @@ struct GameEvents {
 };
 
 int ObstacleHeight(const Obstacle& obs);
+
+// The player's current hitbox (shorter while ducking, feet stay on the ground)
+Rect PlayerBox(const Saltarello& player);
 
 GameState NewGame();
 

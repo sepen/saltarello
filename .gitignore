@@ -23,6 +23,11 @@
 # Build output
 /saltarello
 /saltarello.exe
+/game_test
+/game_test.exe
+/test-suite.log
+/game_test.log
+/game_test.trs
 
 # macOS
 .DS_Store

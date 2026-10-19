@@ -55,8 +55,8 @@ To run Saltarello, follow these steps:
    ./configure
    make
    ```
-   `make check` runs a smoke test: it starts the game without a display and runs
-   60 frames. CI builds and runs it on Linux, macOS and Windows (MSYS2).
+   `make check` runs the unit tests for the game rules (`tests/`) and a smoke test
+   that starts the game without a display and runs 60 frames. CI builds and runs it on Linux, macOS and Windows (MSYS2).
 
    Optional: `./configure --enable-asan` builds with AddressSanitizer. It works on
    Linux; on macOS it aborts at startup because Homebrew's `sdl2` (`sdl2-compat`)
@@ -74,7 +74,7 @@ To run Saltarello, follow these steps:
 
 ## Usage
 - Use the `UP` arrow key to jump.
-- Hold the `DOWN` arrow key to duck under birds.
+- Hold the `DOWN` arrow key to duck under birds (only on the ground).
 - Use the `LEFT` and `RIGHT` arrow keys to move the player.
 - Press the `X` key to shoot bullets.
 - Avoid obstacles to keep playing and increase your score.

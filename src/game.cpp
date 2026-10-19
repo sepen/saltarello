@@ -9,8 +9,12 @@ Obstacle MakeObstacle(int x, bool isStone) {
     return {x, GROUND_Y - (isStone ? STONE_HEIGHT : OBSTACLE_HEIGHT), true, isStone};
 }
 
-bool Overlaps(int ax, int ay, int aw, int ah, int bx, int by, int bw, int bh) {
-    return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+bool Overlaps(const Rect& a, const Rect& b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+Rect ObstacleBox(const Obstacle& obs) {
+    return {obs.x, obs.y, OBSTACLE_WIDTH, ObstacleHeight(obs)};
 }
 
 } // namespace
@@ -19,14 +23,21 @@ int ObstacleHeight(const Obstacle& obs) {
     return obs.isStone ? STONE_HEIGHT : OBSTACLE_HEIGHT;
 }
 
+Rect PlayerBox(const Saltarello& player) {
+    if (player.isDucking) {
+        return {player.x, player.y + PLAYER_HEIGHT - DUCK_HEIGHT, PLAYER_WIDTH, DUCK_HEIGHT};
+    }
+    return {player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT};
+}
+
 GameState NewGame() {
     GameState s;
-    s.player = {50, GROUND_Y - PLAYER_HEIGHT, 0, false};
+    s.player = {50, GROUND_Y - PLAYER_HEIGHT, 0, false, false};
     s.obstacles = {
         MakeObstacle(SCREEN_WIDTH, false),
         MakeObstacle(SCREEN_WIDTH + 400, true),
     };
-    s.bird = {SCREEN_WIDTH + 400, GROUND_Y - 120, false, false};
+    s.bird = {SCREEN_WIDTH + 400, BIRD_Y, false, false};
     s.score = 0;
     s.obstacleSpeed = BASE_OBSTACLE_SPEED;
     s.gameOver = false;
@@ -51,6 +62,9 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
         events.jumped = true;
     }
 
+    // Duck with DOWN key, only while on the ground
+    player.isDucking = input.down && !player.isJumping;
+
     // Move left
     if (input.left && player.x > 0) {
         player.x -= MOVE_SPEED;
@@ -65,7 +79,8 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
     if (game.fireCooldown > 0) game.fireCooldown--;
     if (input.fire) {
         if (game.fireReleased && game.fireCooldown == 0) {
-            bullets.push_back({player.x + PLAYER_WIDTH, player.y + PLAYER_HEIGHT / 2});
+            Rect box = PlayerBox(player);
+            bullets.push_back({box.x + box.w, box.y + box.h / 2});
             events.shot = true;
             game.fireCooldown = FIRE_COOLDOWN_TICKS;
             game.score = std::max(0, game.score - 1);
@@ -95,8 +110,7 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
 
     // Check for collision between player and obstacles
     for (const auto& obs : obstacles) {
-        if (Overlaps(player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT,
-                     obs.x, obs.y, OBSTACLE_WIDTH, ObstacleHeight(obs))) {
+        if (Overlaps(PlayerBox(player), ObstacleBox(obs))) {
             game.gameOver = true;
             break;
         }
@@ -109,8 +123,7 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
 
         for (auto& obs : obstacles) {
             if (obs.active &&
-                Overlaps(it_bullet->x, it_bullet->y, BULLET_WIDTH, BULLET_HEIGHT,
-                         obs.x, obs.y, OBSTACLE_WIDTH, ObstacleHeight(obs))) {
+                Overlaps({it_bullet->x, it_bullet->y, BULLET_WIDTH, BULLET_HEIGHT}, ObstacleBox(obs))) {
                 obs.active = false;  // Only this obstacle is destroyed
                 bulletDestroyed = true;
                 break;
@@ -140,10 +153,8 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
             bird.x = SCREEN_WIDTH;
         }
 
-        // Holding DOWN ducks under the bird
-        if (!input.down &&
-            Overlaps(player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT,
-                     bird.x, bird.y, BIRD_WIDTH, BIRD_HEIGHT)) {
+        // Duck under the bird or jump over it
+        if (Overlaps(PlayerBox(player), {bird.x, bird.y, BIRD_WIDTH, BIRD_HEIGHT})) {
             game.gameOver = true;
         }
     }
