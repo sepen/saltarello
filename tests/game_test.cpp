@@ -21,23 +21,23 @@ static const Input NO_KEYS = {false, false, false, false, false};
 static const Input DOWN = {false, true, false, false, false};
 static const Input UP = {true, false, false, false, false};
 
-// A game with no obstacles, the bird active and right on top of the player
-static GameState GameWithBirdOnPlayer() {
+// A game with no obstacles, the pig active and right on top of the player
+static GameState GameWithPigOnPlayer() {
     GameState game = NewGame();
     game.obstacles.clear();
-    game.score = BIRD_MIN_SCORE;
-    game.bird.x = game.player.x + 5;
+    game.score = PIG_MIN_SCORE;
+    game.pig.x = game.player.x + 5;
     return game;
 }
 
-static void TestStandingPlayerHitsBird() {
-    GameState game = GameWithBirdOnPlayer();
+static void TestStandingPlayerHitsPig() {
+    GameState game = GameWithPigOnPlayer();
     UpdateGame(game, NO_KEYS);
     CHECK(game.gameOver);
 }
 
-static void TestDuckingPlayerClearsBird() {
-    GameState game = GameWithBirdOnPlayer();
+static void TestDuckingPlayerClearsPig() {
+    GameState game = GameWithPigOnPlayer();
     for (int i = 0; i < 5; i++) UpdateGame(game, DOWN);
     CHECK(game.player.isDucking);
     CHECK(!game.gameOver);
@@ -60,27 +60,27 @@ static void TestCannotDuckInTheAir() {
     CHECK(!game.player.isDucking);
 }
 
-static void TestJumpClearsBird() {
+static void TestJumpClearsPig() {
     GameState game = NewGame();
     game.obstacles.clear();
-    game.score = BIRD_MIN_SCORE;
+    game.score = PIG_MIN_SCORE;
+    // Full jump: UP held
+    for (int i = 0; i < 11; i++) UpdateGame(game, UP);
+    game.pig.x = game.player.x + 5;
     UpdateGame(game, UP);
-    for (int i = 0; i < 10; i++) UpdateGame(game, NO_KEYS);
-    game.bird.x = game.player.x + 5;
-    UpdateGame(game, NO_KEYS);
     CHECK(game.player.isJumping);
     CHECK(!game.gameOver);
 }
 
 static void TestDuckingDoesNotAvoidGroundObstacles() {
     GameState game = NewGame();
-    game.obstacles = {{game.player.x + 5 + BASE_OBSTACLE_SPEED, GROUND_Y - STONE_HEIGHT, true, true}};
+    game.obstacles = {{game.player.x + 5 + BASE_OBSTACLE_SPEED, GROUND_Y - POOP_HEIGHT, true, true}};
     UpdateGame(game, DOWN);
     CHECK(game.gameOver);
 }
 
 static void TestMinObstacleGapGrowsWithSpeed() {
-    // A jump lasts 2 * 18 / 1 = 36 ticks
+    // A jump lasts 2 * JUMP_STRENGTH / GRAVITY = 36 ticks
     CHECK(MinObstacleGap(5) == 36 * 5 + PLAYER_WIDTH);
     CHECK(MinObstacleGap(15) > MinObstacleGap(5));
 }
@@ -136,11 +136,11 @@ static void TestVariableJumpHeight() {
     CHECK(tap < held);
     CHECK(JumpPeak(6) > tap);
     CHECK(JumpPeak(6) < held);
-    // A tap clears a stone but not a tall obstacle
-    CHECK(tap > STONE_HEIGHT);
-    CHECK(tap < OBSTACLE_HEIGHT);
-    // Holding UP keeps the original full jump
-    CHECK(held == 171);
+    // A tap clears a poop but not a tall obstacle
+    CHECK(tap > POOP_HEIGHT);
+    CHECK(tap < TREE_HEIGHT);
+    // Holding UP keeps the full jump: 36 ticks, 342 high
+    CHECK(held == 342);
 }
 
 // Jumps with a 1-tick tap, then presses UP once more `pressBeforeLanding`
@@ -187,49 +187,62 @@ static void TestHoldingUpDoesNotRepeatJumps() {
     CHECK(jumps == 1);
 }
 
-static void TestBallCollisionIgnoresBoxCorners() {
-    Saltarello ball = NewGame().player;
-    Rect box = PlayerBox(ball);
-    // Overlaps the bounding box corner, but not the round ball
-    CHECK(!PlayerHits(ball, {box.x - 10, box.y - 10, 12, 12}));
-    // Touches the top of the ball
-    CHECK(PlayerHits(ball, {box.x + box.w / 2 - 2, box.y - 10, 4, 12}));
+static void TestChickenCollisionIgnoresBoxCorners() {
+    Saltarello chicken = NewGame().player;
+    Rect box = PlayerBox(chicken);
+    // Overlaps the bounding box corner, but not the round body
+    CHECK(!PlayerHits(chicken, Rect{box.x - 10, box.y - 10, 12, 12}));
+    // Touches the top of the body
+    CHECK(PlayerHits(chicken, Rect{box.x + box.w / 2 - 2, box.y - 10, 4, 12}));
 }
 
-static void TestSquashedBallIsWiderAndCentered() {
-    Saltarello ball = NewGame().player;
-    Rect standing = PlayerBox(ball);
-    ball.isDucking = true;
-    Rect squashed = PlayerBox(ball);
+static void TestSquashedChickenIsWiderAndCentered() {
+    Saltarello chicken = NewGame().player;
+    Rect standing = PlayerBox(chicken);
+    chicken.isDucking = true;
+    Rect squashed = PlayerBox(chicken);
     CHECK(squashed.w == DUCK_WIDTH);
     CHECK(squashed.w > standing.w);
     CHECK(squashed.x + squashed.w / 2 == standing.x + standing.w / 2);
 }
 
-static void TestSquashedBallHitsWhatIsBesideIt() {
-    Saltarello ball = NewGame().player;
-    // Low and just to the right of the standing ball
-    Rect beside = {ball.x + PLAYER_WIDTH + 1, GROUND_Y - 10, 10, 10};
-    CHECK(!PlayerHits(ball, beside));
-    ball.isDucking = true;
-    CHECK(PlayerHits(ball, beside));
+static void TestSquashedChickenHitsWhatIsBesideIt() {
+    Saltarello chicken = NewGame().player;
+    // Low and just to the right of the standing chicken
+    Rect beside = {chicken.x + PLAYER_WIDTH + 1, GROUND_Y - 10, 10, 10};
+    CHECK(!PlayerHits(chicken, beside));
+    chicken.isDucking = true;
+    CHECK(PlayerHits(chicken, beside));
+}
+
+static void TestNothingBesideTheTreeTrunk() {
+    Saltarello chicken = NewGame().player;
+    chicken.isDucking = true;
+    // A tree right in front of the squashed chicken: its low front edge sits
+    // beside the trunk, under the crown, where the tree has no wood
+    Obstacle tree = {chicken.x + PLAYER_WIDTH, GROUND_Y - TREE_HEIGHT, true, false};
+    CHECK(!PlayerHits(chicken, ObstacleHitbox(tree)));
+    // Moving closer reaches the trunk
+    tree.x -= PLAYER_WIDTH * 3 / 10;
+    CHECK(PlayerHits(chicken, ObstacleHitbox(tree)));
 }
 
 int main() {
-    TestStandingPlayerHitsBird();
-    TestDuckingPlayerClearsBird();
+    TestStandingPlayerHitsPig();
+    TestDuckingPlayerClearsPig();
     TestDuckingShrinksHitboxKeepingFeetOnGround();
     TestCannotDuckInTheAir();
-    TestJumpClearsBird();
+    TestJumpClearsPig();
     TestDuckingDoesNotAvoidGroundObstacles();
     TestMinObstacleGapGrowsWithSpeed();
     TestObstaclesKeepMinimumGap();
     TestVariableJumpHeight();
     TestJumpBuffering();
     TestHoldingUpDoesNotRepeatJumps();
-    TestBallCollisionIgnoresBoxCorners();
-    TestSquashedBallIsWiderAndCentered();
-    TestSquashedBallHitsWhatIsBesideIt();
+    TestChickenCollisionIgnoresBoxCorners();
+    TestSquashedChickenIsWiderAndCentered();
+    TestSquashedChickenHitsWhatIsBesideIt();
+    TestNothingBesideTheTreeTrunk();
 
     if (failures) {
         std::fprintf(stderr, "%d check(s) failed\n", failures);

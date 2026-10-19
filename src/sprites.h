@@ -6,21 +6,32 @@
 
 #include <SDL.h>
 
-// The player: an orange ball face with wide eyes, a grin and its tongue
-// out. The face fills a w x h ellipse, so a wider, shorter size gives the
-// same ball squashed. Returns an RGBA surface the caller must free.
-SDL_Surface* CreateBallSurface(int w, int h);
+enum class SpriteKind {
+    Chicken,  // the player, facing right
+    Pig,      // flying pig, facing left
+    Tree,     // tall obstacle, smiling
+    Poop,     // short obstacle, smiling
+    Egg,      // bullet
+};
 
-// Same as CreateBallSurface(), uploaded as a texture with alpha blending
-SDL_Texture* CreateBallTexture(SDL_Renderer* renderer, int w, int h);
+// Draws a sprite into a new w x h RGBA surface the caller must free. The
+// drawing keeps its own proportions and is stretched to fill w x h, so the
+// chicken drawn at a wider, shorter size comes out squashed.
+SDL_Surface* CreateSpriteSurface(SpriteKind kind, int w, int h);
 
 // All the game's sprites, created once at startup
 struct Sprites {
-    SDL_Texture* ball;          // standing player
-    SDL_Texture* ballSquashed;  // ducking player
+    SDL_Texture* chicken;
+    SDL_Texture* chickenSquashed;  // ducking
+    SDL_Texture* pig;
+    SDL_Texture* tree;
+    SDL_Texture* poop;
+    SDL_Texture* egg;
 };
 
-Sprites CreateSprites(SDL_Renderer* renderer);
+// Sprites are drawn at `scale` output pixels per world unit, to be shown at
+// their world size
+Sprites CreateSprites(SDL_Renderer* renderer, float scale);
 void DestroySprites(Sprites& sprites);
 
 #endif

@@ -15,7 +15,7 @@ its own commit on `main`. Tick the box in that same commit.
 
 - [x] **Frame-rate independent physics** — movement is currently per frame, so a slow
   frame slows the game down. Use a fixed timestep driven by real elapsed time.
-- [x] **Real ducking** — holding DOWN only makes the bird ignore the player. Halve the
+- [x] **Real ducking** — holding DOWN only makes the pig ignore the player. Halve the
   player's height while ducking so it is visible and the collision is honest.
 - [x] **Minimum gap between obstacles** — respawn uses `rand() % 300` and obstacles can
   end up stacked, sometimes impossible to clear. Guarantee a minimum gap that grows
@@ -28,8 +28,8 @@ its own commit on `main`. Tick the box in that same commit.
 
 - [ ] **Rebalance shooting** — shooting costs 1 point with a 1 s cooldown and barely
   pays off. Options: limited ammo that recharges, or +2 points per destroyed obstacle.
-- [ ] **Bullets hit birds** — they currently pass through.
-- [ ] **More birds at different heights** — some must be jumped, some ducked.
+- [ ] **Eggs hit pigs** — they currently pass through.
+- [ ] **More pigs at different heights** — some must be jumped, some ducked.
 - [ ] **Simple power-ups** — one-hit shield, double jump, slow motion.
 
 ## 4. Presentation
@@ -38,13 +38,13 @@ its own commit on `main`. Tick the box in that same commit.
   on macOS, AppData on Windows, `~/.local/share` on Linux).
 - [ ] **Title screen and pause** — P key and pause on focus loss; replace the
   `gameOver` flag with a `Menu / Playing / Paused / GameOver` state.
-- [ ] **Better text rendering** — `TTF_RenderText_Blended` for smooth edges, and cache
-  the score texture instead of creating it every frame.
+- [ ] **Cache text textures** — the score texture is created every frame. (Smooth,
+  resolution-aware text with `TTF_RenderText_Blended` is done.)
 - [ ] **Parallax background** — 2–3 layers of hills/clouds for a sense of speed.
 - [ ] **Juice** — screen shake and particles on collisions and destroyed obstacles.
-- [ ] **Sprites instead of rectangles** — the player is done (a ball face drawn in
-  code, `src/sprites.cpp`); obstacles and the bird are still rectangles. Simple
-  animation would help too (squash on landing, blink on death).
+- [x] **Sprites instead of rectangles** — chicken, flying pig, smiling tree, smiling
+  poop and eggs, drawn in code (`src/sprites.cpp`).
+- [ ] **Simple animation** — squash on landing, flapping pig wings, blink on death.
 
 ## 5. Input
 

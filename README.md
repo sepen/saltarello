@@ -12,12 +12,12 @@
 - [License](#license)
 
 ## Project Overview
-Saltarello is a 2D platformer game built using the SDL2 library. The game combines elements of jumping, shooting, and obstacle avoidance, providing an engaging experience for players. The objective is to navigate through a series of obstacles while scoring points and avoiding collisions.
+Saltarello is a 2D endless runner built with SDL2, inspired by Chrome's offline dinosaur game. Instead of a dinosaur you play a chicken that jumps over smiling trees and smiling poops, ducks under flying pigs and throws eggs. The objective is to keep running as long as possible while scoring points and avoiding collisions.
 
 ## Features
 - **Jumping Mechanics**: Players can jump over obstacles using the UP arrow key.
-- **Shooting**: Players can shoot bullets using the X key to destroy obstacles.
-- **Dynamic Obstacles**: The game features various types of obstacles, including stones and birds, that increase in difficulty as the player's score rises.
+- **Shooting**: The chicken throws eggs with the X key to destroy obstacles.
+- **Dynamic Obstacles**: Smiling trees (tall), smiling poops (short) and, from 10 points on, a flying pig at head height. The game speeds up as the score rises.
 - **Score Tracking**: Players earn points by avoiding obstacles and can see their score displayed on the screen.
 - **Game Over State**: The game ends when the player collides with an obstacle, with an option to restart.
 
@@ -29,8 +29,8 @@ The code lives in `src/`:
 | File | Responsibility |
 |------|----------------|
 | `game.{h,cpp}` | Game state and rules. No SDL dependency: takes an `Input`, returns `GameEvents` |
-| `render.{h,cpp}` | Draws a frame from the `GameState` |
-| `sprites.{h,cpp}` | Draws the player sprite (an orange ball face) in code at startup |
+| `render.{h,cpp}` | Draws a frame from the `GameState`; scales the 800x600 world to the window |
+| `sprites.{h,cpp}` | Draws all sprites (chicken, flying pig, tree, poop, egg) in code at startup |
 | `audio.{h,cpp}` | Loads and plays sounds and music (optional) |
 | `assets.{h,cpp}` | Locates files under `assets/` |
 | `main.cpp` | SDL setup, event loop and frame timing |
@@ -76,13 +76,18 @@ To run Saltarello, follow these steps:
 ## Usage
 - Press the `UP` arrow key to jump. Tap it for a short hop, hold it to jump higher.
   A press just before landing is remembered, so you can queue the next jump.
-- Hold the `DOWN` arrow key to squash the ball and pass under birds (only on the
-  ground). The squashed ball is wider, so watch the sides.
+- Hold the `DOWN` arrow key to squash the chicken and pass under flying pigs (only on
+  the ground). The squashed chicken is wider, so watch the sides.
 - Use the `LEFT` and `RIGHT` arrow keys to move the player.
-- Press the `X` key to shoot bullets.
+- Press the `X` key to throw eggs.
 - Avoid obstacles to keep playing and increase your score.
 - Press `ENTER` to restart the game after a game over.
+- Press `F` or `F11` to toggle fullscreen.
 - Press `ESC` to quit.
+
+The game is 4:3, so it fills a fullscreen window. The window starts as large as fits
+your screen and can be resized; the game keeps its proportions and redraws its
+sprites and text at the new size.
 
 ## Contributing
 Contributions are welcome! If you would like to contribute to Saltarello, please follow these steps:

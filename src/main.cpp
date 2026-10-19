@@ -1,11 +1,10 @@
-#include "assets.h"
 #include "audio.h"
 #include "game.h"
 #include "render.h"
-#include "sprites.h"
 
 #include <SDL.h>
 #include <SDL_ttf.h>
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
@@ -13,6 +12,15 @@
 #include <string>
 
 const int MAX_TICKS_PER_FRAME = 5;
+
+// Initial window scale: the largest that fits 90% of the display's usable
+// area, between 1x and 3x the world size
+float InitialWindowScale() {
+    SDL_Rect bounds;
+    if (SDL_GetDisplayUsableBounds(0, &bounds) != 0) return 1.5f;
+    float scale = std::min(bounds.w * 0.9f / SCREEN_WIDTH, bounds.h * 0.9f / SCREEN_HEIGHT);
+    return std::max(1.0f, std::min(scale, 3.0f));
+}
 
 // argc/argv are required so SDL_main works on Windows
 int main(int argc, char* argv[]) {
@@ -44,23 +52,32 @@ int main(int argc, char* argv[]) {
 
     Audio audio = OpenAudio();
 
-    // Create SDL window and renderer (fall back to software rendering)
-    SDL_Window* window = SDL_CreateWindow("Saltarello", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    // Create a resizable window scaled to the display, and a renderer that
+    // works in world units and scales them to the window keeping the aspect
+    // ratio (fall back to software rendering)
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+    float windowScale = InitialWindowScale();
+    SDL_Window* window = SDL_CreateWindow("Saltarello", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                          static_cast<int>(SCREEN_WIDTH * windowScale),
+                                          static_cast<int>(SCREEN_HEIGHT * windowScale),
+                                          SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_Renderer* renderer = nullptr;
     if (window) {
         renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
         if (!renderer) renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
     }
+    if (renderer) SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Load font for rendering text
-    TTF_Font* font = renderer ? TTF_OpenFont(AssetPath("font.ttf").c_str(), 24) : nullptr;
+    // Font and sprites at the window's real pixel density
+    Graphics graphics = renderer ? CreateGraphics(renderer) : Graphics{1, nullptr, {}};
 
-    if (!window || !renderer || !font) {
+    if (!window || !renderer || !graphics.font) {
         if (!window || !renderer) {
             std::cerr << "Failed to create window/renderer: " << SDL_GetError() << std::endl;
         } else {
             std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
         }
+        DestroyGraphics(graphics);
         CloseAudio(audio);
         TTF_Quit();
         if (renderer) SDL_DestroyRenderer(renderer);
@@ -68,9 +85,9 @@ int main(int argc, char* argv[]) {
         SDL_Quit();
         return 1;
     }
-
-    Sprites sprites = CreateSprites(renderer);
-    if (!sprites.ball || !sprites.ballSquashed) {
+    const Sprites& sprites = graphics.sprites;
+    if (!sprites.chicken || !sprites.chickenSquashed || !sprites.pig || !sprites.tree ||
+        !sprites.poop || !sprites.egg) {
         std::cerr << "Failed to create sprites: " << SDL_GetError() << std::endl;
     }
 
@@ -102,6 +119,25 @@ int main(int argc, char* argv[]) {
             // Quit game on window close
             if (e.type == SDL_QUIT) quit = true;
 
+            // Redraw sprites and text for the new pixel size; also needed when
+            // the renderer loses its textures (e.g. Direct3D device reset)
+            bool resized = e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED;
+            if (resized || e.type == SDL_RENDER_TARGETS_RESET || e.type == SDL_RENDER_DEVICE_RESET) {
+                DestroyGraphics(graphics);
+                graphics = CreateGraphics(renderer);
+                if (!graphics.font) {
+                    std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
+                    quit = true;
+                }
+            }
+
+            // Toggle fullscreen with F or F11 (the 4:3 world fills the height)
+            if (e.type == SDL_KEYDOWN && !e.key.repeat &&
+                (e.key.keysym.sym == SDLK_f || e.key.keysym.sym == SDLK_F11)) {
+                bool fullscreen = SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN_DESKTOP;
+                SDL_SetWindowFullscreen(window, fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
+            }
+
             // Quit game on ESC key press
             if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) quit = true;
 
@@ -129,7 +165,7 @@ int main(int argc, char* argv[]) {
             accumulator -= tickSeconds;
         }
 
-        RenderGame(renderer, font, sprites, game);
+        RenderGame(renderer, graphics, game);
         SDL_RenderPresent(renderer);
 
         // Sleep until the next tick is due; drawing more often than the game
@@ -139,9 +175,8 @@ int main(int argc, char* argv[]) {
         if (untilNextTick > 0) SDL_Delay(static_cast<Uint32>(std::ceil(untilNextTick * 1000)));
     }
 
-    DestroySprites(sprites);
+    DestroyGraphics(graphics);
     CloseAudio(audio);
-    TTF_CloseFont(font);
     TTF_Quit();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
