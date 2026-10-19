@@ -5,7 +5,7 @@ its own commit on `main`. Tick the box in that same commit.
 
 ## 1. Foundations
 
-- [ ] **Split `saltarello.cpp` into modules** — `game.{h,cpp}` (state and update),
+- [x] **Split `saltarello.cpp` into modules** — `game.{h,cpp}` (state and update),
   `render.cpp`, `audio.cpp`, `main.cpp`. `GameState` already groups the state,
   so this is mostly moving code.
 - [ ] **CI on GitHub Actions** — build on Linux, macOS and Windows (MSYS2) on every

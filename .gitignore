@@ -17,6 +17,7 @@
 /install-sh
 /missing
 .deps/
+.dirstamp
 *.o
 
 # Build output

@@ -22,6 +22,16 @@ Saltarello is a 2D platformer game built using the SDL2 library. The game combin
 ## How it Works
 Saltarello uses the SDL2 library for graphics, audio, and input handling. The game initializes a window and renderer, loads necessary assets (fonts, sounds, and music), and enters a main game loop that handles events, updates game state, and renders graphics. The player character can move left and right, jump, and shoot bullets to interact with obstacles. The game dynamically generates obstacles based on the player's score, increasing the challenge as the game progresses.
 
+The code lives in `src/`:
+
+| File | Responsibility |
+|------|----------------|
+| `game.{h,cpp}` | Game state and rules. No SDL dependency: takes an `Input`, returns `GameEvents` |
+| `render.{h,cpp}` | Draws a frame from the `GameState` |
+| `audio.{h,cpp}` | Loads and plays sounds and music (optional) |
+| `assets.{h,cpp}` | Locates files under `assets/` |
+| `main.cpp` | SDL setup, event loop and frame timing |
+
 ## Installation
 To run Saltarello, follow these steps:
 
