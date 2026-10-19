@@ -95,6 +95,20 @@ void RenderGame(SDL_Renderer* renderer, const Graphics& graphics, const GameStat
     SDL_Color darkgrey = {47, 47, 47, 255};
     RenderText(renderer, graphics, "Score: " + std::to_string(game.score), 16, 12, darkgrey);
 
+    // Eggs left, top-right: full ones solid, the one recharging fading in
+    const int iconW = 24, iconH = 19, spacing = 30;
+    for (int i = 0; i < MAX_EGGS; i++) {
+        float fill = i < game.eggs ? 1.0f
+                   : i == game.eggs ? static_cast<float>(game.eggRecharge) / EGG_RECHARGE_TICKS
+                   : 0.0f;
+        SDL_Rect icon = {SCREEN_WIDTH - 16 - (MAX_EGGS - i) * spacing + (spacing - iconW), 16, iconW, iconH};
+        if (sprites.egg) {
+            SDL_SetTextureAlphaMod(sprites.egg, static_cast<Uint8>(50 + 205 * fill));
+            SDL_RenderCopy(renderer, sprites.egg, NULL, &icon);
+            SDL_SetTextureAlphaMod(sprites.egg, 255);
+        }
+    }
+
     // Display game over message
     if (game.gameOver) {
         SDL_Color red = {255, 0, 0, 255};

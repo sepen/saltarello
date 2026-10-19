@@ -36,7 +36,11 @@ const int BULLET_WIDTH = 20;
 const int BULLET_HEIGHT = 16;  // bullets are eggs
 const int BULLET_SPEED = 16;
 const int TICKS_PER_SECOND = 60;     // UpdateGame() runs at this fixed rate
-const int FIRE_COOLDOWN_TICKS = 60;  // 1 s between shots
+// The chicken carries MAX_EGGS eggs; throwing is free, one egg comes back
+// every EGG_RECHARGE_TICKS, and breaking an obstacle scores like dodging it
+const int MAX_EGGS = 3;
+const int EGG_RECHARGE_TICKS = 120;  // 2 s
+const int FIRE_COOLDOWN_TICKS = 15;  // 0.25 s between throws
 // Obstacles cross the screen in ~1.9 s at the start; +1 every 10 points
 const int BASE_OBSTACLE_SPEED = 7;
 const int SPAWN_SPREAD = 600;  // random extra distance when an obstacle respawns
@@ -78,6 +82,8 @@ struct GameState {
     int obstacleSpeed;
     bool gameOver;
     int fireCooldown; // ticks until the next shot is allowed
+    int eggs;         // eggs left to throw
+    int eggRecharge;  // ticks spent recharging the next egg
     bool fireReleased;
     bool upReleased;
     int jumpBuffer; // ticks left to perform a buffered jump

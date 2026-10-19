@@ -26,8 +26,8 @@ its own commit on `main`. Tick the box in that same commit.
 
 ## 3. Mechanics
 
-- [ ] **Rebalance shooting** — shooting costs 1 point with a 1 s cooldown and barely
-  pays off. Options: limited ammo that recharges, or +2 points per destroyed obstacle.
+- [x] **Rebalance shooting** — throwing is free with 3 eggs that recharge (1 every
+  2 s, shown top-right), and breaking an obstacle scores +1 like dodging it.
 - [ ] **Eggs hit pigs** — they currently pass through.
 - [ ] **More pigs at different heights** — some must be jumped, some ducked.
 - [ ] **Simple power-ups** — one-hit shield, double jump, slow motion.

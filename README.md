@@ -16,7 +16,7 @@ Saltarello is a 2D endless runner built with SDL2, inspired by Chrome's offline 
 
 ## Features
 - **Jumping Mechanics**: Players can jump over obstacles using the UP arrow key.
-- **Shooting**: The chicken throws eggs with the X key to destroy obstacles.
+- **Shooting**: The chicken throws eggs with the X key to break obstacles (+1 point, like dodging them). It carries 3 eggs, shown top-right, and gets one back every 2 seconds.
 - **Dynamic Obstacles**: Smiling trees (tall), smiling poops (short) and, from 10 points on, a flying pig at head height. The game speeds up as the score rises.
 - **Score Tracking**: Players earn points by avoiding obstacles and can see their score displayed on the screen.
 - **Game Over State**: The game ends when the player collides with an obstacle, with an option to restart.
@@ -79,7 +79,7 @@ To run Saltarello, follow these steps:
 - Hold the `DOWN` arrow key to squash the chicken and pass under flying pigs (only on
   the ground). The squashed chicken is wider, so watch the sides.
 - Use the `LEFT` and `RIGHT` arrow keys to move the player.
-- Press the `X` key to throw eggs.
+- Press the `X` key to throw an egg (3 at most, recharging over time).
 - Avoid obstacles to keep playing and increase your score.
 - Press `ENTER` to restart the game after a game over.
 - Press `F` or `F11` to toggle fullscreen.

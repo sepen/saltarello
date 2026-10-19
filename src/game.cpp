@@ -100,6 +100,8 @@ GameState NewGame() {
     s.obstacleSpeed = BASE_OBSTACLE_SPEED;
     s.gameOver = false;
     s.fireCooldown = 0;
+    s.eggs = MAX_EGGS;
+    s.eggRecharge = 0;
     s.fireReleased = true;
     s.upReleased = true;
     s.jumpBuffer = 0;
@@ -149,15 +151,21 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
         player.x += MOVE_SPEED;
     }
 
-    // Fire bullets with X key (one shot per key press)
+    // Recharge eggs, one at a time
+    if (game.eggs < MAX_EGGS && ++game.eggRecharge >= EGG_RECHARGE_TICKS) {
+        game.eggs++;
+        game.eggRecharge = 0;
+    }
+
+    // Throw an egg with X key (one per key press)
     if (game.fireCooldown > 0) game.fireCooldown--;
     if (input.fire) {
-        if (game.fireReleased && game.fireCooldown == 0) {
+        if (game.fireReleased && game.fireCooldown == 0 && game.eggs > 0) {
             Rect box = PlayerBox(player);
-            bullets.push_back({box.x + box.w, box.y + box.h / 2});
+            bullets.push_back({box.x + box.w, box.y + box.h / 2 - BULLET_HEIGHT / 2});
             events.shot = true;
             game.fireCooldown = FIRE_COOLDOWN_TICKS;
-            game.score = std::max(0, game.score - 1);
+            game.eggs--;
         }
         game.fireReleased = false;
     } else {
@@ -201,6 +209,7 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
             if (obs.active &&
                 Overlaps({it_bullet->x, it_bullet->y, BULLET_WIDTH, BULLET_HEIGHT}, ObstacleHitbox(obs))) {
                 obs.active = false;  // Only this obstacle is destroyed
+                game.score++;        // same as dodging it
                 bulletDestroyed = true;
                 break;
             }

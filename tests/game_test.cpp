@@ -227,6 +227,66 @@ static void TestNothingBesideTheTreeTrunk() {
     CHECK(PlayerHits(chicken, ObstacleHitbox(tree)));
 }
 
+static const Input FIRE_KEY = {false, false, false, false, true};
+
+// A game with nothing to hit or be hit by
+static GameState EmptyGame() {
+    GameState game = NewGame();
+    game.obstacles.clear();
+    return game;
+}
+
+// Presses X at the given ticks (releasing it in between) and runs `ticks`
+// ticks in total. Returns how many eggs were thrown.
+static int ThrowAt(GameState& game, std::vector<int> pressTicks, int ticks) {
+    int thrown = 0;
+    for (int t = 0; t < ticks; t++) {
+        bool press = std::find(pressTicks.begin(), pressTicks.end(), t) != pressTicks.end();
+        if (UpdateGame(game, press ? FIRE_KEY : NO_KEYS).shot) thrown++;
+    }
+    return thrown;
+}
+
+static void TestThrowingIsFree() {
+    GameState game = EmptyGame();
+    game.score = 5;
+    CHECK(ThrowAt(game, {0}, 1) == 1);
+    CHECK(game.score == 5);
+    CHECK(game.eggs == MAX_EGGS - 1);
+}
+
+static void TestEggsRunOut() {
+    GameState game = EmptyGame();
+    // Four presses, well spaced but before any egg comes back
+    CHECK(ThrowAt(game, {0, 20, 40, 60}, 70) == MAX_EGGS);
+    CHECK(game.eggs == 0);
+}
+
+static void TestThrowCooldown() {
+    GameState game = EmptyGame();
+    CHECK(ThrowAt(game, {0, FIRE_COOLDOWN_TICKS - 5}, FIRE_COOLDOWN_TICKS) == 1);
+}
+
+static void TestEggsRecharge() {
+    GameState game = EmptyGame();
+    ThrowAt(game, {0}, 1);
+    for (int i = 0; i < EGG_RECHARGE_TICKS - 1; i++) UpdateGame(game, NO_KEYS);
+    CHECK(game.eggs == MAX_EGGS - 1);
+    UpdateGame(game, NO_KEYS);
+    CHECK(game.eggs == MAX_EGGS);
+}
+
+static void TestBreakingObstacleScores() {
+    GameState game = NewGame();
+    // A tree ahead and an egg about to hit it
+    game.obstacles = {{400, GROUND_Y - TREE_HEIGHT, true, false}};
+    game.bullets = {{395, GROUND_Y - 50}};
+    UpdateGame(game, NO_KEYS);
+    CHECK(game.bullets.empty());
+    CHECK(game.score == 1);
+    CHECK(game.obstacles[0].x > SCREEN_WIDTH);  // replaced by a new one
+}
+
 int main() {
     TestStandingPlayerHitsPig();
     TestDuckingPlayerClearsPig();
@@ -243,6 +303,11 @@ int main() {
     TestSquashedChickenIsWiderAndCentered();
     TestSquashedChickenHitsWhatIsBesideIt();
     TestNothingBesideTheTreeTrunk();
+    TestThrowingIsFree();
+    TestEggsRunOut();
+    TestThrowCooldown();
+    TestEggsRecharge();
+    TestBreakingObstacleScores();
 
     if (failures) {
         std::fprintf(stderr, "%d check(s) failed\n", failures);
