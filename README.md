@@ -16,8 +16,8 @@ Saltarello is a 2D endless runner built with SDL2, inspired by Chrome's offline 
 
 ## Features
 - **Jumping Mechanics**: Players can jump over obstacles using the UP arrow key.
-- **Shooting**: The chicken throws eggs with the X key to break obstacles and knock down flying pigs (+1 point, like dodging them; pigs fly high, so jump and throw). It carries 3 eggs, shown top-right, and gets one back every 2 seconds.
-- **Dynamic Obstacles**: Smiling trees (tall), smiling poops (short) and, from 10 points on, a flying pig at head height. The game speeds up as the score rises.
+- **Shooting**: The chicken throws eggs with the X key to break obstacles and knock down flying pigs (+1 point, like dodging them; pigs above the beak need a jump and throw). It carries 3 eggs, shown top-right, and gets one back every 2 seconds.
+- **Dynamic Obstacles**: Smiling trees (tall) and smiling poops (short) and, from 10 points on, flying pigs at three heights: low (jump them), at head height (duck under them) and high (harmless unless you jump into them). Obstacles are always far enough apart to get past, and the game speeds up as the score rises.
 - **Score Tracking**: Players earn points by avoiding obstacles and can see their score displayed on the screen.
 - **Game Over State**: The game ends when the player collides with an obstacle, with an option to restart.
 
@@ -29,7 +29,7 @@ The code lives in `src/`:
 | File | Responsibility |
 |------|----------------|
 | `game.{h,cpp}` | Game state and rules. No SDL dependency: takes an `Input`, returns `GameEvents` |
-| `render.{h,cpp}` | Draws a frame from the `GameState`; scales the 800x600 world to the window |
+| `render.{h,cpp}` | Draws a frame or the title screen; scales the world to the window |
 | `sprites.{h,cpp}` | Draws all sprites (chicken, flying pig, tree, poop, egg) in code at startup |
 | `audio.{h,cpp}` | Loads and plays sounds and music (optional) |
 | `assets.{h,cpp}` | Locates files under `assets/` |
@@ -74,6 +74,9 @@ To run Saltarello, follow these steps:
    `SDL_AUDIODRIVER=dummy` it runs headless.
 
 ## Usage
+The game opens on a title screen with the controls; press `ENTER` to start. The
+mouse pointer is hidden while playing.
+
 - Press the `UP` arrow key to jump. Tap it for a short hop, hold it to jump higher.
   A press just before landing is remembered, so you can queue the next jump.
 - Hold the `DOWN` arrow key to squash the chicken and pass under flying pigs (only on
@@ -85,9 +88,9 @@ To run Saltarello, follow these steps:
 - Press `F` or `F11` to toggle fullscreen.
 - Press `ESC` to quit.
 
-The game is 4:3, so it fills a fullscreen window. The window starts as large as fits
-your screen and can be resized; the game keeps its proportions and redraws its
-sprites and text at the new size.
+The window starts as large as fits your screen and can be resized or made fullscreen.
+The world is 600 units high and widens to match the window (at least 4:3), so it
+always fills the screen with no bars; sprites and text are redrawn at the new size.
 
 ## Contributing
 Contributions are welcome! If you would like to contribute to Saltarello, please follow these steps:

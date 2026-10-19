@@ -13,6 +13,24 @@
 
 const int MAX_TICKS_PER_FRAME = 5;
 
+// World width matching the renderer's aspect ratio, so the view fills the
+// window (and a widescreen fullscreen) instead of showing bars on the sides
+int WorldWidthFor(SDL_Renderer* renderer) {
+    int w = SCREEN_WIDTH, h = SCREEN_HEIGHT;
+    SDL_GetRendererOutputSize(renderer, &w, &h);
+    if (h <= 0) return SCREEN_WIDTH;
+    long width = std::lround(static_cast<double>(SCREEN_HEIGHT) * w / h);
+    return static_cast<int>(std::min<long>(MAX_SCREEN_WIDTH, std::max<long>(SCREEN_WIDTH, width)));
+}
+
+// Fits the world to the window and recreates the graphics for its size
+Graphics SetUpView(SDL_Renderer* renderer, GameState& game) {
+    int width = WorldWidthFor(renderer);
+    SDL_RenderSetLogicalSize(renderer, width, SCREEN_HEIGHT);
+    game.width = width;
+    return CreateGraphics(renderer, width);
+}
+
 // Initial window scale: the largest that fits 90% of the display's usable
 // area, between 1x and 3x the world size
 float InitialWindowScale() {
@@ -66,10 +84,10 @@ int main(int argc, char* argv[]) {
         renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
         if (!renderer) renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
     }
-    if (renderer) SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Font and sprites at the window's real pixel density
-    Graphics graphics = renderer ? CreateGraphics(renderer) : Graphics{1, nullptr, {}};
+    // World size, font and sprites for the window's size and pixel density
+    GameState game = NewGame();
+    Graphics graphics = renderer ? SetUpView(renderer, game) : Graphics{SCREEN_WIDTH, 1, nullptr, {}};
 
     if (!window || !renderer || !graphics.font) {
         if (!window || !renderer) {
@@ -91,7 +109,8 @@ int main(int argc, char* argv[]) {
         std::cerr << "Failed to create sprites: " << SDL_GetError() << std::endl;
     }
 
-    GameState game = NewGame();
+    bool onTitle = true;  // the key legend shows until ENTER starts the game
+    bool cursorHidden = false;
     bool quit = false;
     long frames = 0;
     SDL_Event e;
@@ -124,7 +143,7 @@ int main(int argc, char* argv[]) {
             bool resized = e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED;
             if (resized || e.type == SDL_RENDER_TARGETS_RESET || e.type == SDL_RENDER_DEVICE_RESET) {
                 DestroyGraphics(graphics);
-                graphics = CreateGraphics(renderer);
+                graphics = SetUpView(renderer, game);
                 if (!graphics.font) {
                     std::cerr << "Failed to load font: " << TTF_GetError() << std::endl;
                     quit = true;
@@ -141,10 +160,13 @@ int main(int argc, char* argv[]) {
             // Quit game on ESC key press
             if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) quit = true;
 
-            // Restart game on ENTER key press after game over
-            if (game.gameOver && e.type == SDL_KEYDOWN &&
-                (e.key.keysym.sym == SDLK_RETURN || e.key.keysym.sym == SDLK_KP_ENTER)) {
-                game = NewGame();
+            // ENTER starts the game from the title screen, or restarts it after
+            // game over
+            bool enter = e.type == SDL_KEYDOWN &&
+                         (e.key.keysym.sym == SDLK_RETURN || e.key.keysym.sym == SDLK_KP_ENTER);
+            if (enter && (onTitle || game.gameOver)) {
+                onTitle = false;
+                game = NewGame(graphics.width);
             }
         }
 
@@ -157,15 +179,27 @@ int main(int argc, char* argv[]) {
             keys[SDL_SCANCODE_X] != 0,
         };
 
+        // Hide the mouse pointer only while playing
+        bool playing = !onTitle && !game.gameOver;
+        if (playing != cursorHidden) {
+            SDL_ShowCursor(playing ? SDL_DISABLE : SDL_ENABLE);
+            cursorHidden = playing;
+        }
+
         while (accumulator >= tickSeconds) {
+            accumulator -= tickSeconds;
+            if (onTitle) continue;
             GameEvents events = UpdateGame(game, input);
             if (events.jumped) PlaySound(audio.jump);
             if (events.shot) PlaySound(audio.shoot);
             if (events.crashed) PlaySound(audio.collision);
-            accumulator -= tickSeconds;
         }
 
-        RenderGame(renderer, graphics, game);
+        if (onTitle) {
+            RenderTitle(renderer, graphics);
+        } else {
+            RenderGame(renderer, graphics, game);
+        }
         SDL_RenderPresent(renderer);
 
         // Sleep until the next tick is due; drawing more often than the game

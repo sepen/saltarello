@@ -12,16 +12,20 @@
 // are created at the real pixel density so they stay sharp. Recreate it
 // when the window size changes.
 struct Graphics {
+    int width;    // world width (see SCREEN_WIDTH)
     float scale;  // output pixels per world unit
     TTF_Font* font;
     Sprites sprites;
 };
 
 // On failure `font` is NULL (sprites fall back to plain rectangles)
-Graphics CreateGraphics(SDL_Renderer* renderer);
+Graphics CreateGraphics(SDL_Renderer* renderer, int width);
 void DestroyGraphics(Graphics& graphics);
 
 // Draws a full frame (without presenting it)
 void RenderGame(SDL_Renderer* renderer, const Graphics& graphics, const GameState& game);
+
+// Draws the title screen: the key legend and how to start
+void RenderTitle(SDL_Renderer* renderer, const Graphics& graphics);
 
 #endif

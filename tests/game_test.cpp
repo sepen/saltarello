@@ -21,12 +21,15 @@ static const Input NO_KEYS = {false, false, false, false, false};
 static const Input DOWN = {false, true, false, false, false};
 static const Input UP = {true, false, false, false, false};
 
-// A game with no obstacles, the pig active and right on top of the player
-static GameState GameWithPigOnPlayer() {
+static Obstacle Pig(int x, int y) {
+    return {x, y, true, ObstacleKind::Pig};
+}
+
+// A game whose only obstacle is a pig right on top of the player
+static GameState GameWithPigOnPlayer(int pigY = PIG_HEAD_Y) {
     GameState game = NewGame();
-    game.obstacles.clear();
     game.score = PIG_MIN_SCORE;
-    game.pig.x = game.player.x + 5;
+    game.obstacles = {Pig(game.player.x + 5, pigY)};
     return game;
 }
 
@@ -66,7 +69,7 @@ static void TestJumpClearsPig() {
     game.score = PIG_MIN_SCORE;
     // Full jump: UP held
     for (int i = 0; i < 11; i++) UpdateGame(game, UP);
-    game.pig.x = game.player.x + 5;
+    game.obstacles = {Pig(game.player.x + 5, PIG_HEAD_Y)};
     UpdateGame(game, UP);
     CHECK(game.player.isJumping);
     CHECK(!game.gameOver);
@@ -74,7 +77,7 @@ static void TestJumpClearsPig() {
 
 static void TestDuckingDoesNotAvoidGroundObstacles() {
     GameState game = NewGame();
-    game.obstacles = {{game.player.x + 5 + BASE_OBSTACLE_SPEED, GROUND_Y - POOP_HEIGHT, true, true}};
+    game.obstacles = {{game.player.x + 5 + BASE_OBSTACLE_SPEED, GROUND_Y - POOP_HEIGHT, true, ObstacleKind::Poop}};
     UpdateGame(game, DOWN);
     CHECK(game.gameOver);
 }
@@ -220,7 +223,7 @@ static void TestNothingBesideTheTreeTrunk() {
     chicken.isDucking = true;
     // A tree right in front of the squashed chicken: its low front edge sits
     // beside the trunk, under the crown, where the tree has no wood
-    Obstacle tree = {chicken.x + PLAYER_WIDTH, GROUND_Y - TREE_HEIGHT, true, false};
+    Obstacle tree = {chicken.x + PLAYER_WIDTH, GROUND_Y - TREE_HEIGHT, true, ObstacleKind::Tree};
     CHECK(!PlayerHits(chicken, ObstacleHitbox(tree)));
     // Moving closer reaches the trunk
     tree.x -= PLAYER_WIDTH * 3 / 10;
@@ -279,7 +282,7 @@ static void TestEggsRecharge() {
 static void TestBreakingObstacleScores() {
     GameState game = NewGame();
     // A tree ahead and an egg about to hit it
-    game.obstacles = {{400, GROUND_Y - TREE_HEIGHT, true, false}};
+    game.obstacles = {{400, GROUND_Y - TREE_HEIGHT, true, ObstacleKind::Tree}};
     game.bullets = {{395, GROUND_Y - 50}};
     UpdateGame(game, NO_KEYS);
     CHECK(game.bullets.empty());
@@ -287,13 +290,12 @@ static void TestBreakingObstacleScores() {
     CHECK(game.obstacles[0].x > SCREEN_WIDTH);  // replaced by a new one
 }
 
-// A game where the pig is active and an egg is about to hit it
+// A game where an egg is about to hit a pig
 static GameState EggAboutToHitPig() {
     GameState game = EmptyGame();
     game.score = PIG_MIN_SCORE;
-    game.pig.active = true;
-    game.pig.x = 400;
-    Rect body = PigHitbox(game.pig);
+    game.obstacles = {Pig(400, PIG_HEAD_Y)};
+    Rect body = PigHitbox(game.obstacles[0]);
     game.bullets = {{body.x - BULLET_SPEED, body.y + body.h / 2}};
     return game;
 }
@@ -303,28 +305,110 @@ static void TestEggHitsPig() {
     UpdateGame(game, NO_KEYS);
     CHECK(game.bullets.empty());
     CHECK(game.score == PIG_MIN_SCORE + 1);
-    CHECK(game.pig.x >= SCREEN_WIDTH);  // a new pig comes later
+    CHECK(game.obstacles[0].x >= SCREEN_WIDTH);  // replaced by a new obstacle
 }
 
-static void TestEggIgnoresInactivePig() {
-    GameState game = EggAboutToHitPig();
-    game.score = 0;
-    game.pig.active = false;
-    UpdateGame(game, NO_KEYS);
-    CHECK(game.bullets.size() == 1);
-    CHECK(game.score == 0);
+// Height of the egg thrown standing vs the pig's body
+static void TestEggThrownStanding() {
+    for (int pigY : {PIG_LOW_Y, PIG_HEAD_Y}) {
+        GameState game = EmptyGame();
+        game.obstacles = {Pig(game.player.x + PLAYER_WIDTH + 40, pigY)};
+        UpdateGame(game, FIRE_KEY);
+        CHECK(game.bullets.size() == 1);
+        Rect egg = {game.bullets[0].x, game.bullets[0].y, BULLET_WIDTH, BULLET_HEIGHT};
+        Rect body = PigHitbox(game.obstacles[0]);
+        bool below = egg.y >= body.y + body.h;
+        // A low pig can be hit standing; a pig at head height flies above the egg
+        CHECK(pigY == PIG_LOW_Y ? !below : below);
+    }
 }
 
-static void TestEggThrownStandingPassesUnderPig() {
+static void TestLowPigMustBeJumped() {
+    GameState standing = GameWithPigOnPlayer(PIG_LOW_Y);
+    UpdateGame(standing, NO_KEYS);
+    CHECK(standing.gameOver);
+
+    GameState ducking = GameWithPigOnPlayer(PIG_LOW_Y);
+    UpdateGame(ducking, DOWN);
+    CHECK(ducking.gameOver);
+
+    // Even a short hop clears it
     GameState game = EmptyGame();
-    game.score = PIG_MIN_SCORE;
-    game.pig.active = true;
-    game.pig.x = game.player.x + PLAYER_WIDTH + 40;
-    UpdateGame(game, FIRE_KEY);
-    CHECK(game.bullets.size() == 1);
-    Rect egg = {game.bullets[0].x, game.bullets[0].y, BULLET_WIDTH, BULLET_HEIGHT};
-    Rect body = PigHitbox(game.pig);
-    CHECK(egg.y >= body.y + body.h);  // below the pig's belly
+    UpdateGame(game, UP);
+    for (int i = 0; i < 6; i++) UpdateGame(game, NO_KEYS);
+    game.obstacles = {Pig(game.player.x + 5, PIG_LOW_Y)};
+    UpdateGame(game, NO_KEYS);
+    CHECK(!game.gameOver);
+}
+
+static void TestHighPigOnlyHitsMidJump() {
+    GameState standing = GameWithPigOnPlayer(PIG_HIGH_Y);
+    for (int i = 0; i < 3; i++) UpdateGame(standing, NO_KEYS);
+    CHECK(!standing.gameOver);
+
+    // Right after taking off, the chicken rises into it
+    GameState game = EmptyGame();
+    UpdateGame(game, UP);
+    game.obstacles = {Pig(game.player.x + 5, PIG_HIGH_Y)};
+    UpdateGame(game, UP);
+    CHECK(game.gameOver);
+}
+
+// Spawns many obstacles at a fixed score and counts the pigs and their heights
+static void CountSpawns(int score, int& pigs, int& total, bool heights[3]) {
+    std::srand(7);
+    GameState game = NewGame();
+    for (int tick = 0; tick < 20000; tick++) {
+        game.player.x = -1000;
+        game.gameOver = false;
+        game.score = score;
+        std::vector<Obstacle> before = game.obstacles;
+        UpdateGame(game, NO_KEYS);
+        for (size_t i = 0; i < game.obstacles.size(); i++) {
+            const Obstacle& obs = game.obstacles[i];
+            if (obs.x <= before[i].x) continue;  // not respawned
+            total++;
+            if (obs.kind != ObstacleKind::Pig) continue;
+            pigs++;
+            heights[0] |= obs.y == PIG_LOW_Y;
+            heights[1] |= obs.y == PIG_HEAD_Y;
+            heights[2] |= obs.y == PIG_HIGH_Y;
+        }
+    }
+}
+
+static void TestPigSpawning() {
+    int pigs = 0, total = 0;
+    bool heights[3] = {false, false, false};
+    CountSpawns(PIG_MIN_SCORE - 1, pigs, total, heights);
+    CHECK(total > 100);
+    CHECK(pigs == 0);
+
+    pigs = total = 0;
+    CountSpawns(PIG_MIN_SCORE, pigs, total, heights);
+    CHECK(total > 100);
+    // About 1 in PIG_CHANCE, at all three heights
+    CHECK(pigs * PIG_CHANCE > total * 2 / 3 && pigs * PIG_CHANCE < total * 4 / 3);
+    CHECK(heights[0] && heights[1] && heights[2]);
+}
+
+static void TestWideWorld() {
+    const int width = 1067;  // 16:9 at 600 high
+    GameState game = NewGame(width);
+    CHECK(game.width == width);
+    for (const auto& obs : game.obstacles) CHECK(obs.x >= width);  // start off-screen
+
+    // Respawned obstacles also come from beyond the right edge
+    game.obstacles = {{-OBSTACLE_WIDTH - 1, GROUND_Y - TREE_HEIGHT, true, ObstacleKind::Tree}};
+    UpdateGame(game, NO_KEYS);
+    CHECK(game.obstacles[0].x >= width);
+
+    // The chicken can walk up to the right edge
+    GameState walk = NewGame(width);
+    walk.obstacles.clear();
+    for (int i = 0; i < 200; i++) UpdateGame(walk, {false, false, false, true, false});
+    CHECK(walk.player.x > SCREEN_WIDTH - PLAYER_WIDTH);
+    CHECK(walk.player.x + PLAYER_WIDTH <= width + MOVE_SPEED);
 }
 
 int main() {
@@ -349,8 +433,11 @@ int main() {
     TestEggsRecharge();
     TestBreakingObstacleScores();
     TestEggHitsPig();
-    TestEggIgnoresInactivePig();
-    TestEggThrownStandingPassesUnderPig();
+    TestEggThrownStanding();
+    TestLowPigMustBeJumped();
+    TestHighPigOnlyHitsMidJump();
+    TestPigSpawning();
+    TestWideWorld();
 
     if (failures) {
         std::fprintf(stderr, "%d check(s) failed\n", failures);

@@ -5,8 +5,20 @@
 
 namespace {
 
-Obstacle MakeObstacle(int x, bool isPoop) {
-    return {x, GROUND_Y - (isPoop ? POOP_HEIGHT : TREE_HEIGHT), true, isPoop};
+Obstacle MakeObstacle(int x, ObstacleKind kind) {
+    switch (kind) {
+        case ObstacleKind::Tree: return {x, GROUND_Y - TREE_HEIGHT, true, kind};
+        case ObstacleKind::Poop: return {x, GROUND_Y - POOP_HEIGHT, true, kind};
+        case ObstacleKind::Pig: break;
+    }
+    const int pigY[] = {PIG_LOW_Y, PIG_HEAD_Y, PIG_HIGH_Y};
+    return {x, pigY[std::rand() % 3], true, kind};
+}
+
+// Pigs only show up from PIG_MIN_SCORE on
+ObstacleKind RandomKind(int score) {
+    if (score >= PIG_MIN_SCORE && std::rand() % PIG_CHANCE == 0) return ObstacleKind::Pig;
+    return std::rand() % 2 == 0 ? ObstacleKind::Poop : ObstacleKind::Tree;
 }
 
 bool Overlaps(const Rect& a, const Rect& b) {
@@ -20,15 +32,15 @@ bool Overlaps(const Rect& r, const Hitbox& hitbox) {
     return false;
 }
 
-// Respawns `obs` off-screen to the right, behind every other obstacle plus
-// the minimum gap
-void Respawn(Obstacle& obs, bool isPoop, const std::vector<Obstacle>& obstacles, int speed) {
-    int x = SCREEN_WIDTH + std::rand() % SPAWN_SPREAD;
+// Replaces `obs` with a new random obstacle off-screen to the right, behind
+// every other obstacle plus the minimum gap
+void Respawn(Obstacle& obs, const std::vector<Obstacle>& obstacles, int width, int speed, int score) {
+    int x = width + std::rand() % SPAWN_SPREAD;
     for (const auto& other : obstacles) {
         if (&other == &obs) continue;
-        x = std::max(x, other.x + OBSTACLE_WIDTH + MinObstacleGap(speed));
+        x = std::max(x, other.x + ObstacleWidth(other) + MinObstacleGap(speed));
     }
-    obs = MakeObstacle(x, isPoop);
+    obs = MakeObstacle(x, RandomKind(score));
 }
 
 } // namespace
@@ -48,7 +60,8 @@ bool PlayerHits(const Saltarello& player, const Hitbox& hitbox) {
 Hitbox ObstacleHitbox(const Obstacle& obs) {
     // Proportions of the drawings in sprites.cpp
     const int w = OBSTACLE_WIDTH;
-    if (obs.isPoop) {
+    if (obs.kind == ObstacleKind::Pig) return {{PigHitbox(obs), {0, 0, 0, 0}}, 1};
+    if (obs.kind == ObstacleKind::Poop) {
         // Wide base (lower 13/30) and narrower upper tiers (middle 2/3)
         const int h = POOP_HEIGHT;
         return {{{obs.x, obs.y + h * 17 / 30, w, h * 13 / 30},
@@ -64,8 +77,17 @@ Rect PigHitbox(const Obstacle& pig) {
     return {pig.x + PIG_WIDTH / 12, pig.y + PIG_HEIGHT / 6, PIG_WIDTH * 5 / 6, PIG_HEIGHT * 17 / 24};
 }
 
+int ObstacleWidth(const Obstacle& obs) {
+    return obs.kind == ObstacleKind::Pig ? PIG_WIDTH : OBSTACLE_WIDTH;
+}
+
 int ObstacleHeight(const Obstacle& obs) {
-    return obs.isPoop ? POOP_HEIGHT : TREE_HEIGHT;
+    switch (obs.kind) {
+        case ObstacleKind::Tree: return TREE_HEIGHT;
+        case ObstacleKind::Poop: return POOP_HEIGHT;
+        case ObstacleKind::Pig: return PIG_HEIGHT;
+    }
+    return TREE_HEIGHT;
 }
 
 bool PlayerHits(const Saltarello& player, const Rect& r) {
@@ -88,14 +110,14 @@ Rect PlayerBox(const Saltarello& player) {
     return {player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT};
 }
 
-GameState NewGame() {
+GameState NewGame(int width) {
     GameState s;
+    s.width = width;
     s.player = {PLAYER_X, GROUND_Y - PLAYER_HEIGHT, 0, false, false};
     s.obstacles = {
-        MakeObstacle(SCREEN_WIDTH, false),
-        MakeObstacle(SCREEN_WIDTH + 400, true),
+        MakeObstacle(width, ObstacleKind::Tree),
+        MakeObstacle(width + 400, ObstacleKind::Poop),
     };
-    s.pig = {SCREEN_WIDTH + 400, PIG_Y, false, false};
     s.score = 0;
     s.obstacleSpeed = BASE_OBSTACLE_SPEED;
     s.gameOver = false;
@@ -115,7 +137,6 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
     Saltarello& player = game.player;
     std::vector<Obstacle>& obstacles = game.obstacles;
     std::vector<Bullet>& bullets = game.bullets;
-    Obstacle& pig = game.pig;
 
     // Jump when UP is pressed. A press shortly before landing is buffered
     // and performed as soon as the player touches the ground.
@@ -147,7 +168,7 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
     }
 
     // Move right
-    if (input.right && player.x < SCREEN_WIDTH - PLAYER_WIDTH) {
+    if (input.right && player.x < game.width - PLAYER_WIDTH) {
         player.x += MOVE_SPEED;
     }
 
@@ -186,8 +207,8 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
         obs.x -= game.obstacleSpeed;
     }
     for (auto& obs : obstacles) {
-        if (obs.x + OBSTACLE_WIDTH < 0) {
-            Respawn(obs, obs.isPoop, obstacles, game.obstacleSpeed);
+        if (obs.x + ObstacleWidth(obs) < 0) {
+            Respawn(obs, obstacles, game.width, game.obstacleSpeed, game.score);
             game.score++;
         }
     }
@@ -200,7 +221,8 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
         }
     }
 
-    // Move bullets and check for collision with obstacles and the pig
+    // Move bullets and check for collision with obstacles. Pigs at head
+    // height or higher fly above the beak: they have to be hit mid-jump.
     for (auto it_bullet = bullets.begin(); it_bullet != bullets.end(); ) {
         it_bullet->x += BULLET_SPEED;
         const Rect egg = {it_bullet->x, it_bullet->y, BULLET_WIDTH, BULLET_HEIGHT};
@@ -215,14 +237,7 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
             }
         }
 
-        // The pig flies above the chicken's beak: it has to be hit mid-jump
-        if (!bulletDestroyed && pig.active && Overlaps(egg, PigHitbox(pig))) {
-            pig.x = SCREEN_WIDTH + std::rand() % SPAWN_SPREAD;  // a new pig, later
-            game.score++;
-            bulletDestroyed = true;
-        }
-
-        if (bulletDestroyed || it_bullet->x > SCREEN_WIDTH) {
+        if (bulletDestroyed || it_bullet->x > game.width) {
             it_bullet = bullets.erase(it_bullet);
         } else {
             ++it_bullet;
@@ -232,22 +247,7 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
     // Replace destroyed obstacles so their number stays the same
     for (auto& obs : obstacles) {
         if (!obs.active) {
-            Respawn(obs, std::rand() % 2 == 0, obstacles, game.obstacleSpeed);
-        }
-    }
-
-    // Add pig obstacle after the score reaches PIG_MIN_SCORE
-    if (game.score >= PIG_MIN_SCORE) {
-        pig.active = true;
-        pig.x -= std::max(1, game.obstacleSpeed - PIG_SLOWDOWN);
-
-        if (pig.x + PIG_WIDTH < 0) {
-            pig.x = SCREEN_WIDTH;
-        }
-
-        // Duck under the pig or jump over it
-        if (PlayerHits(player, PigHitbox(pig))) {
-            game.gameOver = true;
+            Respawn(obs, obstacles, game.width, game.obstacleSpeed, game.score);
         }
     }
 

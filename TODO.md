@@ -30,15 +30,18 @@ its own commit on `main`. Tick the box in that same commit.
   2 s, shown top-right), and breaking an obstacle scores +1 like dodging it.
 - [x] **Eggs hit pigs** — +1 and the pig comes back later. The pig flies above the
   beak, so it has to be hit mid-jump.
-- [ ] **More pigs at different heights** — some must be jumped, some ducked.
+- [x] **More pigs at different heights** — pigs are part of the obstacle stream (1 in 3
+  from 10 points on), flying low (jump), at head height (duck) or high (only hits
+  mid-jump).
 - [ ] **Simple power-ups** — one-hit shield, double jump, slow motion.
 
 ## 4. Presentation
 
 - [ ] **Persistent high score** — stored under `SDL_GetPrefPath()` (Application Support
   on macOS, AppData on Windows, `~/.local/share` on Linux).
-- [ ] **Title screen and pause** — P key and pause on focus loss; replace the
-  `gameOver` flag with a `Menu / Playing / Paused / GameOver` state.
+- [x] **Title screen** — key legend; ENTER starts. The mouse pointer is hidden while
+  playing.
+- [ ] **Pause** — P key and pause on focus loss.
 - [ ] **Cache text textures** — the score texture is created every frame. (Smooth,
   resolution-aware text with `TTF_RenderText_Blended` is done.)
 - [ ] **Parallax background** — 2–3 layers of hills/clouds for a sense of speed.

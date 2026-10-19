@@ -6,9 +6,11 @@
 
 #include <vector>
 
-// Constants for game settings, in world units. The world is 4:3 so it fills
-// a fullscreen window; the window scales it to fit the display.
-const int SCREEN_WIDTH = 800;
+// Constants for game settings, in world units. The world is 600 high and at
+// least 800 wide (4:3); it widens to match the window's aspect ratio (e.g.
+// 1067 on a 16:9 fullscreen), so the view fills the screen with no bars.
+const int SCREEN_WIDTH = 800;  // minimum world width
+const int MAX_SCREEN_WIDTH = 2400;
 const int SCREEN_HEIGHT = 600;
 const int GROUND_HEIGHT = 100;
 const int GROUND_Y = SCREEN_HEIGHT - GROUND_HEIGHT;
@@ -23,10 +25,10 @@ const int TREE_HEIGHT = 120;
 const int POOP_HEIGHT = 60;
 const int PIG_WIDTH = 72;
 const int PIG_HEIGHT = 48;
-// Flying pig at head height: its belly (GROUND_Y - 60) hits a standing
-// chicken and clears a ducking one
-const int PIG_Y = GROUND_Y - 60 - PIG_HEIGHT;
-const int PIG_SLOWDOWN = 6;  // the pig flies this much slower than the obstacles
+// Flying pigs come at three clearly different heights (top of the sprite):
+const int PIG_LOW_Y = GROUND_Y - 50;    // skims the ground: jump it
+const int PIG_HEAD_Y = GROUND_Y - 92;   // at head height: duck under or jump over
+const int PIG_HIGH_Y = GROUND_Y - 142;  // above a standing chicken: hits mid-jump only
 const int GRAVITY = 2;
 const int JUMP_STRENGTH = 36;  // a full jump lasts 2 * 36 / 2 = 36 ticks, 342 high
 const int JUMP_CUT_SPEED = 16;  // releasing UP caps the rising speed: short hop
@@ -44,7 +46,9 @@ const int FIRE_COOLDOWN_TICKS = 15;  // 0.25 s between throws
 // Obstacles cross the screen in ~1.9 s at the start; +1 every 10 points
 const int BASE_OBSTACLE_SPEED = 7;
 const int SPAWN_SPREAD = 600;  // random extra distance when an obstacle respawns
+// From PIG_MIN_SCORE on, 1 in PIG_CHANCE new obstacles is a flying pig
 const int PIG_MIN_SCORE = 10;
+const int PIG_CHANCE = 3;
 
 struct Rect {
     int x, y, w, h;
@@ -59,12 +63,15 @@ struct Saltarello {
     bool isDucking;
 };
 
-// Struct representing obstacles in the game: a smiling tree (tall) or a
-// smiling poop (short)
+// Obstacles: smiling trees (tall) and poops (short) on the ground, and
+// flying pigs at different heights. All move together, kept apart by the
+// minimum gap.
+enum class ObstacleKind { Tree, Poop, Pig };
+
 struct Obstacle {
     int x, y;
     bool active;
-    bool isPoop;
+    ObstacleKind kind;
 };
 
 // Struct representing bullets fired by the player
@@ -74,10 +81,10 @@ struct Bullet {
 
 // Full game state, so a restart is a single assignment
 struct GameState {
+    int width;  // world width, see SCREEN_WIDTH
     Saltarello player;
     std::vector<Obstacle> obstacles;
     std::vector<Bullet> bullets;
-    Obstacle pig;
     int score;
     int obstacleSpeed;
     bool gameOver;
@@ -101,10 +108,11 @@ struct GameEvents {
     bool crashed;
 };
 
+int ObstacleWidth(const Obstacle& obs);
 int ObstacleHeight(const Obstacle& obs);
 
 // Collision shape of an obstacle, following its drawing: crown + trunk for
-// a tree, base + upper tiers for a poop
+// a tree, base + upper tiers for a poop, the body for a pig
 struct Hitbox {
     Rect parts[2];
     int count;
@@ -128,7 +136,8 @@ Rect PlayerBox(const Saltarello& player);
 // touches the rectangle
 bool PlayerHits(const Saltarello& player, const Rect& r);
 
-GameState NewGame();
+// A new game in a world `width` units wide
+GameState NewGame(int width = SCREEN_WIDTH);
 
 // Advances the game one tick (1 / TICKS_PER_SECOND seconds)
 GameEvents UpdateGame(GameState& game, const Input& input);
