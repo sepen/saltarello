@@ -21,8 +21,8 @@ its own commit on `main`. Tick the box in that same commit.
   end up stacked, sometimes impossible to clear. Guarantee a minimum gap that grows
   with speed.
 - [x] **Variable jump height** — releasing UP early cuts the jump short.
-- [ ] **Coyote time and jump buffering** — a jump pressed a few milliseconds before
-  landing (or just after leaving the ground) still counts.
+- [x] **Jump buffering** — a jump pressed a few milliseconds before landing still
+  counts. (Coyote time dropped: the ground is flat, there are no ledges to run off.)
 
 ## 3. Mechanics
 
@@ -42,8 +42,9 @@ its own commit on `main`. Tick the box in that same commit.
   the score texture instead of creating it every frame.
 - [ ] **Parallax background** — 2–3 layers of hills/clouds for a sense of speed.
 - [ ] **Juice** — screen shake and particles on collisions and destroyed obstacles.
-- [ ] **Sprites instead of rectangles** — via SDL2_image, or at least simple animation
-  (squash on landing, blink on death).
+- [ ] **Sprites instead of rectangles** — the player is done (a ball face drawn in
+  code, `src/sprites.cpp`); obstacles and the bird are still rectangles. Simple
+  animation would help too (squash on landing, blink on death).
 
 ## 5. Input
 

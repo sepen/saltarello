@@ -30,6 +30,7 @@ The code lives in `src/`:
 |------|----------------|
 | `game.{h,cpp}` | Game state and rules. No SDL dependency: takes an `Input`, returns `GameEvents` |
 | `render.{h,cpp}` | Draws a frame from the `GameState` |
+| `sprites.{h,cpp}` | Draws the player sprite (an orange ball face) in code at startup |
 | `audio.{h,cpp}` | Loads and plays sounds and music (optional) |
 | `assets.{h,cpp}` | Locates files under `assets/` |
 | `main.cpp` | SDL setup, event loop and frame timing |
@@ -73,8 +74,10 @@ To run Saltarello, follow these steps:
    `SDL_AUDIODRIVER=dummy` it runs headless.
 
 ## Usage
-- Use the `UP` arrow key to jump. Tap it for a short hop, hold it to jump higher.
-- Hold the `DOWN` arrow key to duck under birds (only on the ground).
+- Press the `UP` arrow key to jump. Tap it for a short hop, hold it to jump higher.
+  A press just before landing is remembered, so you can queue the next jump.
+- Hold the `DOWN` arrow key to squash the ball and pass under birds (only on the
+  ground). The squashed ball is wider, so watch the sides.
 - Use the `LEFT` and `RIGHT` arrow keys to move the player.
 - Press the `X` key to shoot bullets.
 - Avoid obstacles to keep playing and increase your score.

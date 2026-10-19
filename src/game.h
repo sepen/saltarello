@@ -13,7 +13,9 @@ const int GROUND_HEIGHT = 100;
 const int GROUND_Y = SCREEN_HEIGHT - GROUND_HEIGHT;
 const int PLAYER_WIDTH = 40;
 const int PLAYER_HEIGHT = 40;
-const int DUCK_HEIGHT = 20;  // player height while holding DOWN on the ground
+// Holding DOWN on the ground squashes the ball: shorter and a bit wider
+const int DUCK_WIDTH = 52;
+const int DUCK_HEIGHT = 20;
 const int OBSTACLE_WIDTH = 30;
 const int OBSTACLE_HEIGHT = 60;
 const int STONE_HEIGHT = 30;
@@ -23,6 +25,7 @@ const int BIRD_Y = GROUND_Y - 50;  // head height: hits a standing player, clear
 const int GRAVITY = 1;
 const int JUMP_STRENGTH = 18;
 const int JUMP_CUT_SPEED = 8;  // releasing UP caps the rising speed: short hop
+const int JUMP_BUFFER_TICKS = 6;  // a press this close to landing still jumps (100 ms)
 const int MOVE_SPEED = 5;
 const int BULLET_WIDTH = 10;
 const int BULLET_HEIGHT = 5;
@@ -37,8 +40,8 @@ struct Rect {
     int x, y, w, h;
 };
 
-// Struct representing the player character. (x, y) is the top-left corner
-// of the standing player; use PlayerBox() for the current hitbox.
+// Struct representing the player character, a ball. (x, y) is the top-left
+// corner of the standing ball; use PlayerBox() for its current bounds.
 struct Saltarello {
     int x, y;
     int velocityY;
@@ -69,6 +72,8 @@ struct GameState {
     bool gameOver;
     int fireCooldown; // ticks until the next shot is allowed
     bool fireReleased;
+    bool upReleased;
+    int jumpBuffer; // ticks left to perform a buffered jump
 };
 
 // Keys held during the current tick
@@ -89,8 +94,12 @@ int ObstacleHeight(const Obstacle& obs);
 // over one, land and jump again before the next one arrives
 int MinObstacleGap(int obstacleSpeed);
 
-// The player's current hitbox (shorter while ducking, feet stay on the ground)
+// Bounding box of the ball: squashed while ducking, centered on the same
+// spot and resting on the ground
 Rect PlayerBox(const Saltarello& player);
+
+// Whether the ball (the ellipse inside PlayerBox) touches the rectangle
+bool PlayerHits(const Saltarello& player, const Rect& r);
 
 GameState NewGame();
 

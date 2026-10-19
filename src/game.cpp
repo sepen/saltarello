@@ -39,9 +39,22 @@ int ObstacleHeight(const Obstacle& obs) {
     return obs.isStone ? STONE_HEIGHT : OBSTACLE_HEIGHT;
 }
 
+bool PlayerHits(const Saltarello& player, const Rect& r) {
+    // Scale space so the ellipse becomes a unit circle (the rectangle stays a
+    // rectangle), then test the rectangle's closest point to the center
+    Rect box = PlayerBox(player);
+    double a = box.w / 2.0, b = box.h / 2.0;
+    double cx = box.x + a, cy = box.y + b;
+    double px = std::min(std::max(cx, static_cast<double>(r.x)), static_cast<double>(r.x + r.w));
+    double py = std::min(std::max(cy, static_cast<double>(r.y)), static_cast<double>(r.y + r.h));
+    double dx = (px - cx) / a, dy = (py - cy) / b;
+    return dx * dx + dy * dy < 1;
+}
+
 Rect PlayerBox(const Saltarello& player) {
     if (player.isDucking) {
-        return {player.x, player.y + PLAYER_HEIGHT - DUCK_HEIGHT, PLAYER_WIDTH, DUCK_HEIGHT};
+        return {player.x - (DUCK_WIDTH - PLAYER_WIDTH) / 2, player.y + PLAYER_HEIGHT - DUCK_HEIGHT,
+                DUCK_WIDTH, DUCK_HEIGHT};
     }
     return {player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT};
 }
@@ -59,6 +72,8 @@ GameState NewGame() {
     s.gameOver = false;
     s.fireCooldown = 0;
     s.fireReleased = true;
+    s.upReleased = true;
+    s.jumpBuffer = 0;
     return s;
 }
 
@@ -71,11 +86,20 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
     std::vector<Bullet>& bullets = game.bullets;
     Obstacle& bird = game.bird;
 
-    // Jump with UP key
-    if (input.up && !player.isJumping) {
-        player.velocityY = -JUMP_STRENGTH;
-        player.isJumping = true;
-        events.jumped = true;
+    // Jump when UP is pressed. A press shortly before landing is buffered
+    // and performed as soon as the player touches the ground.
+    bool upPressed = input.up && game.upReleased;
+    game.upReleased = !input.up;
+    if (upPressed) game.jumpBuffer = JUMP_BUFFER_TICKS;
+    if (game.jumpBuffer > 0) {
+        if (!player.isJumping) {
+            player.velocityY = -JUMP_STRENGTH;
+            player.isJumping = true;
+            events.jumped = true;
+            game.jumpBuffer = 0;
+        } else if (!upPressed) {
+            game.jumpBuffer--; // the press tick itself does not count
+        }
     }
 
     // Releasing UP while rising cuts the jump short (variable jump height)
@@ -133,7 +157,7 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
 
     // Check for collision between player and obstacles
     for (const auto& obs : obstacles) {
-        if (Overlaps(PlayerBox(player), ObstacleBox(obs))) {
+        if (PlayerHits(player, ObstacleBox(obs))) {
             game.gameOver = true;
             break;
         }
@@ -177,7 +201,7 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
         }
 
         // Duck under the bird or jump over it
-        if (Overlaps(PlayerBox(player), {bird.x, bird.y, BIRD_WIDTH, BIRD_HEIGHT})) {
+        if (PlayerHits(player, {bird.x, bird.y, BIRD_WIDTH, BIRD_HEIGHT})) {
             game.gameOver = true;
         }
     }

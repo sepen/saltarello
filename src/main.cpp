@@ -2,6 +2,7 @@
 #include "audio.h"
 #include "game.h"
 #include "render.h"
+#include "sprites.h"
 
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -68,6 +69,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    Sprites sprites = CreateSprites(renderer);
+    if (!sprites.ball || !sprites.ballSquashed) {
+        std::cerr << "Failed to create sprites: " << SDL_GetError() << std::endl;
+    }
+
     GameState game = NewGame();
     bool quit = false;
     long frames = 0;
@@ -123,7 +129,7 @@ int main(int argc, char* argv[]) {
             accumulator -= tickSeconds;
         }
 
-        RenderGame(renderer, font, game);
+        RenderGame(renderer, font, sprites, game);
         SDL_RenderPresent(renderer);
 
         // Sleep until the next tick is due; drawing more often than the game
@@ -133,6 +139,7 @@ int main(int argc, char* argv[]) {
         if (untilNextTick > 0) SDL_Delay(static_cast<Uint32>(std::ceil(untilNextTick * 1000)));
     }
 
+    DestroySprites(sprites);
     CloseAudio(audio);
     TTF_CloseFont(font);
     TTF_Quit();

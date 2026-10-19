@@ -143,6 +143,78 @@ static void TestVariableJumpHeight() {
     CHECK(held == 171);
 }
 
+// Jumps with a 1-tick tap, then presses UP once more `pressBeforeLanding`
+// ticks before the first jump lands (or never, if negative) and keeps
+// playing a few ticks past landing. Returns how many jumps started.
+static int JumpsWithSecondPress(int pressBeforeLanding) {
+    // Find out how many ticks the tap jump lasts
+    GameState ref = NewGame();
+    ref.obstacles.clear();
+    int landing = 0;
+    UpdateGame(ref, UP);
+    while (ref.player.isJumping) {
+        UpdateGame(ref, NO_KEYS);
+        landing++;
+    }
+
+    GameState game = NewGame();
+    game.obstacles.clear();
+    int jumps = UpdateGame(game, UP).jumped ? 1 : 0;
+    for (int i = 1; i <= landing + 3; i++) {
+        bool press = pressBeforeLanding >= 0 && i == landing - pressBeforeLanding;
+        if (UpdateGame(game, press ? UP : NO_KEYS).jumped) jumps++;
+    }
+    return jumps;
+}
+
+static void TestJumpBuffering() {
+    CHECK(JumpsWithSecondPress(-1) == 1);
+    // Pressed slightly before landing: jumps again on landing
+    CHECK(JumpsWithSecondPress(3) == 2);
+    CHECK(JumpsWithSecondPress(JUMP_BUFFER_TICKS - 1) == 2);
+    // Pressed too early: the press is forgotten
+    CHECK(JumpsWithSecondPress(JUMP_BUFFER_TICKS) == 1);
+    CHECK(JumpsWithSecondPress(JUMP_BUFFER_TICKS + 5) == 1);
+}
+
+static void TestHoldingUpDoesNotRepeatJumps() {
+    GameState game = NewGame();
+    game.obstacles.clear();
+    int jumps = 0;
+    for (int tick = 0; tick < 120; tick++) {
+        if (UpdateGame(game, UP).jumped) jumps++;
+    }
+    CHECK(jumps == 1);
+}
+
+static void TestBallCollisionIgnoresBoxCorners() {
+    Saltarello ball = NewGame().player;
+    Rect box = PlayerBox(ball);
+    // Overlaps the bounding box corner, but not the round ball
+    CHECK(!PlayerHits(ball, {box.x - 10, box.y - 10, 12, 12}));
+    // Touches the top of the ball
+    CHECK(PlayerHits(ball, {box.x + box.w / 2 - 2, box.y - 10, 4, 12}));
+}
+
+static void TestSquashedBallIsWiderAndCentered() {
+    Saltarello ball = NewGame().player;
+    Rect standing = PlayerBox(ball);
+    ball.isDucking = true;
+    Rect squashed = PlayerBox(ball);
+    CHECK(squashed.w == DUCK_WIDTH);
+    CHECK(squashed.w > standing.w);
+    CHECK(squashed.x + squashed.w / 2 == standing.x + standing.w / 2);
+}
+
+static void TestSquashedBallHitsWhatIsBesideIt() {
+    Saltarello ball = NewGame().player;
+    // Low and just to the right of the standing ball
+    Rect beside = {ball.x + PLAYER_WIDTH + 1, GROUND_Y - 10, 10, 10};
+    CHECK(!PlayerHits(ball, beside));
+    ball.isDucking = true;
+    CHECK(PlayerHits(ball, beside));
+}
+
 int main() {
     TestStandingPlayerHitsBird();
     TestDuckingPlayerClearsBird();
@@ -153,6 +225,11 @@ int main() {
     TestMinObstacleGapGrowsWithSpeed();
     TestObstaclesKeepMinimumGap();
     TestVariableJumpHeight();
+    TestJumpBuffering();
+    TestHoldingUpDoesNotRepeatJumps();
+    TestBallCollisionIgnoresBoxCorners();
+    TestSquashedBallIsWiderAndCentered();
+    TestSquashedBallHitsWhatIsBesideIt();
 
     if (failures) {
         std::fprintf(stderr, "%d check(s) failed\n", failures);

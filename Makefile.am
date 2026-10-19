@@ -3,6 +3,7 @@ saltarello_SOURCES = \
 	src/main.cpp \
 	src/game.cpp src/game.h \
 	src/render.cpp src/render.h \
+	src/sprites.cpp src/sprites.h \
 	src/audio.cpp src/audio.h \
 	src/assets.cpp src/assets.h
 saltarello_CPPFLAGS = -DPKGDATADIR='"$(pkgdatadir)"'

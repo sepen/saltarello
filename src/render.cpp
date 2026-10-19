@@ -19,7 +19,7 @@ void RenderText(SDL_Renderer* renderer, TTF_Font* font, const std::string& text,
 
 } // namespace
 
-void RenderGame(SDL_Renderer* renderer, TTF_Font* font, const GameState& game) {
+void RenderGame(SDL_Renderer* renderer, TTF_Font* font, const Sprites& sprites, const GameState& game) {
     // Clear screen and set background color
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
@@ -29,11 +29,16 @@ void RenderGame(SDL_Renderer* renderer, TTF_Font* font, const GameState& game) {
     SDL_Rect ground = {0, GROUND_Y, SCREEN_WIDTH, GROUND_HEIGHT};
     SDL_RenderFillRect(renderer, &ground);
 
-    // Draw player (Saltarello)
-    SDL_SetRenderDrawColor(renderer, 128, 0, 128, 255);
+    // Draw player (Saltarello): a ball, squashed while ducking
     Rect box = PlayerBox(game.player);
     SDL_Rect playerRect = {box.x, box.y, box.w, box.h};
-    SDL_RenderFillRect(renderer, &playerRect);
+    SDL_Texture* ball = game.player.isDucking ? sprites.ballSquashed : sprites.ball;
+    if (ball) {
+        SDL_RenderCopy(renderer, ball, NULL, &playerRect);
+    } else {
+        SDL_SetRenderDrawColor(renderer, 128, 0, 128, 255);
+        SDL_RenderFillRect(renderer, &playerRect);
+    }
 
     // Draw obstacles
     for (const auto& obs : game.obstacles) {
