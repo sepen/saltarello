@@ -29,6 +29,7 @@ const int BULLET_SPEED = 8;
 const int TICKS_PER_SECOND = 60;     // UpdateGame() runs at this fixed rate
 const int FIRE_COOLDOWN_TICKS = 60;  // 1 s between shots
 const int BASE_OBSTACLE_SPEED = 5;
+const int SPAWN_SPREAD = 300;  // random extra distance when an obstacle respawns
 const int BIRD_MIN_SCORE = 10;
 
 struct Rect {
@@ -82,6 +83,10 @@ struct GameEvents {
 };
 
 int ObstacleHeight(const Obstacle& obs);
+
+// Minimum free space between two obstacles at a given speed: enough to jump
+// over one, land and jump again before the next one arrives
+int MinObstacleGap(int obstacleSpeed);
 
 // The player's current hitbox (shorter while ducking, feet stay on the ground)
 Rect PlayerBox(const Saltarello& player);

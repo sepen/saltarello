@@ -17,7 +17,7 @@ its own commit on `main`. Tick the box in that same commit.
   frame slows the game down. Use a fixed timestep driven by real elapsed time.
 - [x] **Real ducking** — holding DOWN only makes the bird ignore the player. Halve the
   player's height while ducking so it is visible and the collision is honest.
-- [ ] **Minimum gap between obstacles** — respawn uses `rand() % 300` and obstacles can
+- [x] **Minimum gap between obstacles** — respawn uses `rand() % 300` and obstacles can
   end up stacked, sometimes impossible to clear. Guarantee a minimum gap that grows
   with speed.
 - [ ] **Variable jump height** — releasing UP early cuts the jump short.

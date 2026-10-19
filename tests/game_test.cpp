@@ -2,7 +2,9 @@
 
 #include "game.h"
 
+#include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 
 static int failures = 0;
 
@@ -77,6 +79,43 @@ static void TestDuckingDoesNotAvoidGroundObstacles() {
     CHECK(game.gameOver);
 }
 
+static void TestMinObstacleGapGrowsWithSpeed() {
+    // A jump lasts 2 * 18 / 1 = 36 ticks
+    CHECK(MinObstacleGap(5) == 36 * 5 + PLAYER_WIDTH);
+    CHECK(MinObstacleGap(15) > MinObstacleGap(5));
+}
+
+// Runs many ticks, shooting all the time so obstacles respawn both after
+// leaving the screen and after being destroyed, and checks every gap.
+static void TestObstaclesKeepMinimumGap() {
+    const Input FIRE = {false, false, false, false, true};
+    const Input NONE = NO_KEYS;
+    for (unsigned seed = 1; seed <= 20; seed++) {
+        std::srand(seed);
+        GameState game = NewGame();
+        bool ok = true;
+        for (int tick = 0; tick < 20000 && ok; tick++) {
+            // Keep the player out of the way and the speed constant
+            game.player.x = -1000;
+            game.gameOver = false;
+            game.score = 0;
+            UpdateGame(game, tick % 2 ? FIRE : NONE);
+
+            std::vector<int> xs;
+            for (const auto& obs : game.obstacles) xs.push_back(obs.x);
+            std::sort(xs.begin(), xs.end());
+            for (size_t i = 1; i < xs.size(); i++) {
+                if (xs[i] - (xs[i - 1] + OBSTACLE_WIDTH) < MinObstacleGap(BASE_OBSTACLE_SPEED)) {
+                    std::fprintf(stderr, "seed %u tick %d: gap %d\n", seed, tick,
+                                 xs[i] - (xs[i - 1] + OBSTACLE_WIDTH));
+                    ok = false;
+                }
+            }
+        }
+        CHECK(ok);
+    }
+}
+
 int main() {
     TestStandingPlayerHitsBird();
     TestDuckingPlayerClearsBird();
@@ -84,6 +123,8 @@ int main() {
     TestCannotDuckInTheAir();
     TestJumpClearsBird();
     TestDuckingDoesNotAvoidGroundObstacles();
+    TestMinObstacleGapGrowsWithSpeed();
+    TestObstaclesKeepMinimumGap();
 
     if (failures) {
         std::fprintf(stderr, "%d check(s) failed\n", failures);

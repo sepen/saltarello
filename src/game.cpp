@@ -17,7 +17,23 @@ Rect ObstacleBox(const Obstacle& obs) {
     return {obs.x, obs.y, OBSTACLE_WIDTH, ObstacleHeight(obs)};
 }
 
+// Respawns `obs` off-screen to the right, behind every other obstacle plus
+// the minimum gap
+void Respawn(Obstacle& obs, bool isStone, const std::vector<Obstacle>& obstacles, int speed) {
+    int x = SCREEN_WIDTH + std::rand() % SPAWN_SPREAD;
+    for (const auto& other : obstacles) {
+        if (&other == &obs) continue;
+        x = std::max(x, other.x + OBSTACLE_WIDTH + MinObstacleGap(speed));
+    }
+    obs = MakeObstacle(x, isStone);
+}
+
 } // namespace
+
+int MinObstacleGap(int obstacleSpeed) {
+    const int jumpTicks = 2 * JUMP_STRENGTH / GRAVITY;
+    return jumpTicks * obstacleSpeed + PLAYER_WIDTH;
+}
 
 int ObstacleHeight(const Obstacle& obs) {
     return obs.isStone ? STONE_HEIGHT : OBSTACLE_HEIGHT;
@@ -99,11 +115,13 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
         player.isJumping = false;
     }
 
-    // Update obstacle positions; respawn and score the ones that left the screen
+    // Update obstacle positions, then respawn and score the ones that left the screen
     for (auto& obs : obstacles) {
         obs.x -= game.obstacleSpeed;
+    }
+    for (auto& obs : obstacles) {
         if (obs.x + OBSTACLE_WIDTH < 0) {
-            obs = MakeObstacle(SCREEN_WIDTH + (std::rand() % 300), obs.isStone);
+            Respawn(obs, obs.isStone, obstacles, game.obstacleSpeed);
             game.score++;
         }
     }
@@ -140,7 +158,7 @@ GameEvents UpdateGame(GameState& game, const Input& input) {
     // Replace destroyed obstacles so their number stays the same
     for (auto& obs : obstacles) {
         if (!obs.active) {
-            obs = MakeObstacle(SCREEN_WIDTH + (std::rand() % 300), std::rand() % 2 == 0);
+            Respawn(obs, std::rand() % 2 == 0, obstacles, game.obstacleSpeed);
         }
     }
 
